@@ -1,0 +1,71 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.so
+*.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+Pipfile.lock
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Logs and outputs
+*.log
+logs/
+results/
+*.csv
+*.png
+*.jpg
+
+# Model checkpoints
+checkpoints/
+*.pth
+*.pt
+
+# Data
+data/data
+
+# Configs and secrets
+.env
+*.yaml
+*.yml
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# PyTorch Lightning & TensorBoard
+lightning_logs/
+tb_logs/
+*.ckpt
+
+# W&B logs
+wandb/
+wandb-debug.log
+wandb-metadata.json
+
+# Testing and coverage
+htmlcov/
+.coverage
+.tox/
+.nox/
+pytest_cache/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Conda and pip cache
+*.conda
+*.egg
+.cache/
