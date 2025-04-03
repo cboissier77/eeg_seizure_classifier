@@ -32,7 +32,6 @@ data/data
 
 # Configs and secrets
 .env
-*.yaml
 *.yml
 
 # OS junk
