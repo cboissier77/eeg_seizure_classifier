@@ -109,8 +109,9 @@ class EEGGraphModel(nn.Module):
         node_features = torch.stack(lstm_outputs, dim=1)  # (batch, 19, hidden_dim * 2)
 
         graph_outputs = []
+        edge_index = self.edge_index.to(node_features.device)
         for b in range(batch_size):
-            out = self.gat(node_features[b], self.edge_index)  # (19, gat_hidden_dim * heads)
+            out = self.gat(node_features[b], edge_index)  # (19, gat_hidden_dim * heads)
             pooled = out.mean(dim=0) #self.pool(out)   #out.mean(dim=0)  # global mean pooling
             graph_outputs.append(pooled)
 
