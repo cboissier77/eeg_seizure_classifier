@@ -27,14 +27,14 @@ class ElectrodeLSTM(nn.Module):
 
 
 class EEGGraphModel(nn.Module):
-    def __init__(self, input_dim=1, lstm_hidden_dim=32, gat_hidden_dim=64, output_dim=1, gat_heads=8):
+    def __init__(self, input_dim=1, lstm_hidden_dim=32, gat_hidden_dim=64, output_dim=1, gat_heads=8,lstm_layers=1, fully_connected=True):
         super(EEGGraphModel, self).__init__()
         self.num_electrodes = 19
         self.bidirectional = True
         self.lstm_hidden_dim = lstm_hidden_dim * (2 if self.bidirectional else 1)
 
         self.lstm_modules = nn.ModuleList([
-            ElectrodeLSTM(input_dim, lstm_hidden_dim, bidirectional=self.bidirectional)
+            ElectrodeLSTM(input_dim, lstm_hidden_dim, bidirectional=self.bidirectional, lstm_layers=lstm_layers)
             for _ in range(self.num_electrodes)
         ])
 
@@ -47,7 +47,7 @@ class EEGGraphModel(nn.Module):
         )
 
         self.fc = nn.Linear(gat_hidden_dim * gat_heads, output_dim)
-        self.edge_index = self.build_fully_connected_graph(self.num_electrodes) #self.build_eeg_graph()
+        self.edge_index = self.build_fully_connected_graph(self.num_electrodes) if fully_connected else self.build_eeg_graph()
   
     
 

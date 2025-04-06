@@ -3,7 +3,7 @@ seed: 42
 data:
   data_dir: "./data/data/"
   train_split: 0.8
-  train_subsample: 0.1
+  train_subsample: 1.0
 
 
 model:
@@ -12,14 +12,14 @@ model:
   gat_hidden_dim: 64
   output_dim: 1
   gat_heads: 8
+  lstm_layers: 1
+  fully_connected: True
 
 training:
   batch_size: 32
   lr: 0.001
   epochs: 50
-  patience: 10
-  checkpoint_path: "./checkpoints/lstm_gat.pth"
-  best_model_path: "./checkpoints/best_lstm_gat.pth"
+  best_model_path: "./results"
 
 loss:
   alpha: 0.75
