@@ -94,8 +94,16 @@ def main():
         train_subsample=cfg['data']['train_subsample']
     )
 
-    study = optuna.create_study(direction='maximize')
-    study.optimize(lambda trial: objective(trial, cfg, train_dataset, val_dataset), n_trials=50)
+    # Use persistent storage to resume later
+    storage_path = f"sqlite:///optuna_study.db"
+    study = optuna.create_study(
+        study_name="eeg_lstm_gat_optimization",
+        direction='maximize',
+        storage=storage_path,
+        load_if_exists=True
+    )
+
+    study.optimize(lambda trial: objective(trial, cfg, train_dataset, val_dataset), n_trials=15,timeout=11.5 * 3600)
 
     print("Best trial:")
     print(study.best_trial)
@@ -123,6 +131,7 @@ def main():
     os.makedirs('configs', exist_ok=True)
     with open('configs/best_config.yaml', 'w') as f:
         yaml.dump(best_config, f)
+
 
 if __name__ == '__main__':
     main()
