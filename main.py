@@ -93,9 +93,10 @@ def main():
         train_size=cfg['data']['train_split'],
         train_subsample=cfg['data']['train_subsample']
     )
+    os.makedirs("checkpoints/optuna", exist_ok=True)  # make sure the directory exists
 
-    # Use persistent storage to resume later
-    storage_path = f"sqlite:///optuna_study.db"
+    storage_path = "sqlite:///checkpoints/optuna/eeg_study.db"
+
     study = optuna.create_study(
         study_name="eeg_lstm_gat_optimization",
         direction='maximize',
