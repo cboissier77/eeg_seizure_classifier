@@ -9,8 +9,21 @@ from data.dataset import EEGDatasetWrapper
 from torch.utils.data import DataLoader
 import os
 import copy
+import json
 
-best_val_score = float('-inf')
+def load_best_val_score(path):
+    try:
+        with open(path, 'r') as f:
+            return float(json.load(f)['best_val_score'])
+    except (FileNotFoundError, ValueError):
+        return float('-inf')
+
+def save_best_val_score(path, score):
+    with open(path, 'w') as f:
+        json.dump({'best_val_score': score}, f)
+
+BEST_SCORE_PATH = "checkpoints/optuna/best_score.json"
+best_val_score = load_best_val_score(BEST_SCORE_PATH)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -77,6 +90,7 @@ def objective(trial, cfg, train_dataset, val_dataset):
         os.makedirs(cfg['training']['best_model_path'], exist_ok=True)
         best_model_path = os.path.join(cfg['training']['best_model_path'], 'best_model.pt')
         torch.save(model.cpu().state_dict(), best_model_path)
+        save_best_val_score(BEST_SCORE_PATH, best_val_score)
         print(f"✅ Saved new best model with val_score: {val_score:.4f}")
         model.to(device)
 
