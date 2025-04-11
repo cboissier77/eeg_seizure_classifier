@@ -68,3 +68,6 @@ dist/
 *.conda
 *.egg
 .cache/
+
+# sandbox notebook
+example.ipynb

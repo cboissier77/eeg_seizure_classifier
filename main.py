@@ -40,12 +40,12 @@ def objective(trial, cfg, train_dataset, val_dataset):
     global best_val_score
 
     lstm_hidden_dim = trial.suggest_int('lstm_hidden_dim', 32, 256)
-    lstm_layers = trial.suggest_int('lstm_layers', 1, 3)
+    lstm_layers = trial.suggest_int('lstm_layers', 1, 4)
     gat_hidden_dim = trial.suggest_int('gat_hidden_dim', 16, 128)
     gat_heads = trial.suggest_int('gat_heads', 1, 8)
     epochs = trial.suggest_int('epochs', 3, 50)
     lr = trial.suggest_float('lr', 1e-5, 1e-2, log=True)
-    alpha = trial.suggest_float('alpha', 0.5, 0.9)
+    alpha = trial.suggest_float('alpha', 0.6, 0.9)
     gamma = trial.suggest_float('gamma', 0.5, 5.0)
     fully_connected = trial.suggest_categorical('fully_connected', [True, False])
 
@@ -136,6 +136,9 @@ def main():
     best_training_cfg['epochs'] = best_params['epochs']
     best_loss_cfg['alpha'] = best_params['alpha']
     best_loss_cfg['gamma'] = best_params['gamma']
+    best_model_cfg['lstm_layers'] = best_params['lstm_layers']
+    best_model_cfg['fully_connected'] = best_params['fully_connected']
+    best_training_cfg['batch_size'] = cfg['training']['batch_size']
 
     best_config = {
         'model': best_model_cfg,
