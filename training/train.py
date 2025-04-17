@@ -1,14 +1,11 @@
-import torch
-import os
 from tqdm import tqdm
 from training.eval import evaluate_model
-import matplotlib.pyplot as plt
 
-def train_model(model, train_loader, val_loader, criterion, optimizer, cfg, device):
+
+def train_model(model, train_loader, val_loader, criterion, optimizer, epochs, device):
     model.to(device)
 
     # Training settings
-    epochs = cfg['training']['epochs']
     print("🧠 Starting training...")
     for epoch in range(epochs):
         model.train()
