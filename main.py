@@ -34,7 +34,8 @@ def objective(trial, cfg, dataset_wrapper, selected_indices):
     lstm_layers = trial.suggest_int("lstm_layers", 1, 4)
     gat_hidden_dim = trial.suggest_int("gat_hidden_dim", 16, 128)
     gat_heads = trial.suggest_int("gat_heads", 1, 8)
-    epochs = trial.suggest_int("epochs", 3, 50)
+    #epochs = trial.suggest_int("epochs", 3, 50)
+    epochs = cfg["training"]["epochs"]  # Fixed epochs for LOOCV
     lr = trial.suggest_float("lr", 1e-5, 1e-2, log=True)
     alpha = trial.suggest_float("alpha", 0.6, 0.9)
     gamma = trial.suggest_float("gamma", 0.5, 5.0)
