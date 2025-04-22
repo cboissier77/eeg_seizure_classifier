@@ -27,16 +27,32 @@ class EEGDatasetWrapper:
         """
         return len(self.clips_tr["subject_id"].unique())
 
-    def leave_one_out_split(self, subject_id_number):
+    def get_subject_ids(self):
+        """Get the unique subject IDs in the dataset.
+        Returns:
+            List[str]: A list of unique subject IDs.
+        """
+        return self.clips_tr["subject_id"].unique().tolist()
+
+    def leave_one_out_split(self, subject_id_test: str, subjects_ids_train: list):
         """Split the dataset into training and validation sets for leave-one-out cross-validation.
         Args:
-            subject_id_number (int): The number of ID of the subject to be left out for validation.
+            subject_id_test (str): The subject ID to be used for validation.
+            subjects_ids_train (list): The list of subject IDs to be used for training.
         Returns:
             Tuple[Dataset, Dataset]: The training and validation datasets.
+        Raises:
+            ValueError: If the test subject ID is in the training set.
         """
-        subject_id = self.clips_tr["subject_id"].unique()[subject_id_number]
-        train_dataset = self.clips_tr[self.clips_tr["subject_id"] != subject_id]
-        val_dataset = self.clips_tr[self.clips_tr["subject_id"] == subject_id]
+        if subject_id_test in subjects_ids_train:
+            raise ValueError(
+                f"Test subject {subject_id_test} is in the training set {subjects_ids_train}"
+            )
+
+        train_dataset = self.clips_tr[
+            self.clips_tr["subject_id"].isin(subjects_ids_train)
+        ]
+        val_dataset = self.clips_tr[self.clips_tr["subject_id"] == subject_id_test]
 
         train_dataset = EEGDataset(
             train_dataset,

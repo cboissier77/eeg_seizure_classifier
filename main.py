@@ -16,7 +16,7 @@ from data.dataset import EEGDatasetWrapper
 import random
 
 
-def objective(trial, cfg, dataset_wrapper, selected_indices):
+def objective(trial, cfg, dataset_wrapper, selected_ids):
     """Objective function for Optuna hyperparameter optimization.
     Args:
         trial (optuna.Trial): Optuna trial object.
@@ -34,7 +34,7 @@ def objective(trial, cfg, dataset_wrapper, selected_indices):
     lstm_layers = trial.suggest_int("lstm_layers", 1, 4)
     gat_hidden_dim = trial.suggest_int("gat_hidden_dim", 16, 128)
     gat_heads = trial.suggest_int("gat_heads", 1, 8)
-    #epochs = trial.suggest_int("epochs", 3, 50)
+    # epochs = trial.suggest_int("epochs", 3, 50)
     epochs = cfg["training"]["epochs"]  # Fixed epochs for LOOCV
     lr = trial.suggest_float("lr", 1e-5, 1e-2, log=True)
     alpha = trial.suggest_float("alpha", 0.6, 0.9)
@@ -46,8 +46,13 @@ def objective(trial, cfg, dataset_wrapper, selected_indices):
 
     val_scores = []
 
-    for i in selected_indices:
-        train_dataset, val_dataset = dataset_wrapper.leave_one_out_split(i)
+    for i in selected_ids:
+        print(f"Training with subject {i} as validation set")
+        # Split the dataset into training and validation sets
+        subjects_ids_train = [x for x in selected_ids if x != i]
+        train_dataset, val_dataset = dataset_wrapper.leave_one_out_split(
+            i, subjects_ids_train
+        )
 
         train_loader = DataLoader(
             train_dataset, batch_size=cfg["training"]["batch_size"], shuffle=True
@@ -98,11 +103,9 @@ def main():
     torch.manual_seed(cfg.get("seed", 42))
     random.seed(cfg.get("seed", 42))
     dataset_wrapper = EEGDatasetWrapper(cfg["data"]["data_dir"])
-    # Randomly choose 4 subject indices
-    all_indices = list(range(dataset_wrapper.num_subjects()))
-    selected_indices = random.sample(
-        all_indices, 4
-    )  # Used for LOOCV (subsampled LOOCV)
+    # choose ids for leave-one-out cross-validation
+    selected_ids = cfg["data"]["hypertuning_subjects_ids"] # based on data exploration performed prior to this
+    print(f"Selected subjects for LOOCV: {selected_ids}")
 
     os.makedirs("checkpoints/optuna", exist_ok=True)  # make sure the directory exists
     storage_path = "sqlite:///checkpoints/optuna/eeg_study.db"
@@ -113,7 +116,7 @@ def main():
         load_if_exists=True,
     )
     study.optimize(
-        lambda trial: objective(trial, cfg, dataset_wrapper, selected_indices),
+        lambda trial: objective(trial, cfg, dataset_wrapper, selected_ids),
         n_trials=15,
         timeout=11.5 * 3600,
     )  # Timeout set to 11.5 hours because of Cluster limit
