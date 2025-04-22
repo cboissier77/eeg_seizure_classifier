@@ -4,6 +4,14 @@ data:
   data_dir: "./data/data/"
   train_split: 0.8
   train_subsample: 1.0
+  hypertuning_subjects_ids:
+    - 's001'
+    - 's004'
+    - 's005'
+    - 's007'
+    - 's009'
+    - 's010'
+    - 's011'
 
 
 model:
@@ -24,3 +32,4 @@ training:
 loss:
   alpha: 0.75
   gamma: 2.0
+
