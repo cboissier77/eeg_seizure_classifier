@@ -18,3 +18,9 @@ def fft_filtering(x: np.ndarray) -> np.ndarray:
     win_len = x.shape[0]
     # Only frequencies b/w 0.5 and 30Hz
     return x[int(0.5 * win_len // 250) : 30 * win_len // 250]
+
+def downsample(x: np.ndarray) -> np.ndarray:
+    """Downsample the signal to 300 samples"""
+    downsampled_signal = signal.resample(x, 300, axis=0)
+    
+    return downsampled_signal

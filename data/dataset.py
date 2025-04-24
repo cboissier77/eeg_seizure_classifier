@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
-from data.preprocess import fft_filtering
+from data.preprocess import downsample
 from seiz_eeg.dataset import EEGDataset
 
 
@@ -56,13 +56,13 @@ class EEGDatasetWrapper:
         train_dataset = EEGDataset(
             train_dataset,
             signals_root=self.data_root / "train",
-            signal_transform=fft_filtering,
+            signal_transform=downsample,
             prefetch=True,
         )
         val_dataset = EEGDataset(
             val_dataset,
             signals_root=self.data_root / "train",
-            signal_transform=fft_filtering,
+            signal_transform=downsample,
             prefetch=True,
         )
 
@@ -78,7 +78,7 @@ class EEGDatasetWrapper:
         train_dataset = EEGDataset(
             train_dataset,
             signals_root=self.data_root / "train",
-            signal_transform=fft_filtering,
+            signal_transform=downsample,
             prefetch=True,
         )
 
@@ -92,7 +92,7 @@ class EEGDatasetWrapper:
         test_dataset = EEGDataset(
             self.clips_te,
             signals_root=self.data_root / "test",
-            signal_transform=fft_filtering,
+            signal_transform=downsample,
             prefetch=True,
             return_id=True,
         )
