@@ -26,9 +26,9 @@ class ElectrodeLSTM(nn.Module):
         return self.norm(out)
 
 
-class EEGGraphModel(nn.Module):
+class EEG_LSTM_GAT_Model(nn.Module):
     def __init__(self, input_dim=1, lstm_hidden_dim=32, gat_hidden_dim=64, output_dim=1, gat_heads=8,lstm_layers=1, fully_connected=True):
-        super(EEGGraphModel, self).__init__()
+        super(EEG_LSTM_GAT_Model, self).__init__()
         self.num_electrodes = 19
         self.bidirectional = True
         self.lstm_hidden_dim = lstm_hidden_dim * (2 if self.bidirectional else 1)

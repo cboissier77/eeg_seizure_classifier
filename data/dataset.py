@@ -2,9 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 from data.preprocess import fft_filtering
-from torch.utils.data import random_split
 from seiz_eeg.dataset import EEGDataset
-from sklearn.model_selection import train_test_split
 
 
 class EEGDatasetWrapper:
@@ -16,6 +14,7 @@ class EEGDatasetWrapper:
         """
         self.data_root = Path(data_dir)
         self.clips_tr = pd.read_parquet(self.data_root / "train/segments.parquet")
+        self.clips_te = pd.read_parquet(self.data_root / "test/segments.parquet")
         ids = self.clips_tr["signals_path"].astype(str).tolist()
         ids = list(map(lambda x: x[x.find("_") + 1 : x.find("_") + 5], ids))
         self.clips_tr["subject_id"] = ids
@@ -68,3 +67,34 @@ class EEGDatasetWrapper:
         )
 
         return train_dataset, val_dataset
+    
+    def all_training_split(self):
+        """Split the dataset into training and validation sets for all training.
+        Returns:
+            Tuple[Dataset, Dataset]: The training and validation datasets.
+        """
+        train_dataset = self.clips_tr
+
+        train_dataset = EEGDataset(
+            train_dataset,
+            signals_root=self.data_root / "train",
+            signal_transform=fft_filtering,
+            prefetch=True,
+        )
+
+        return train_dataset, None
+    
+    def test_dataset(self):
+        """Create the test dataset.
+        Returns:
+            Dataset: The test dataset.
+        """
+        test_dataset = EEGDataset(
+            self.clips_te,
+            signals_root=self.data_root / "test",
+            signal_transform=fft_filtering,
+            prefetch=True,
+            return_id=True,
+        )
+
+        return test_dataset

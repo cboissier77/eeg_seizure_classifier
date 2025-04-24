@@ -5,6 +5,9 @@ from training.eval import evaluate_model
 def train_model(model, train_loader, val_loader, criterion, optimizer, epochs, device):
     model.to(device)
 
+    if val_loader is None:
+        print("No validation set provided. Skipping evaluation.")
+
     # Training settings
     print("🧠 Starting training...")
     for epoch in range(epochs):
@@ -22,6 +25,9 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, epochs, d
 
             running_loss += loss.item()
 
+    if val_loader is None:
+        return None
+    
     model.eval()
     val_macro_f1 = evaluate_model(model, val_loader, device)
 
