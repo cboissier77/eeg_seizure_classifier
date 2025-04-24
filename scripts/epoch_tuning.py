@@ -54,9 +54,7 @@ def epoch_tuning(cfg, dataset_wrapper):
             f"Model {cfg['model']['model_name']} not supported for epoch tuning."
         )
 
-    criterion = BinaryFocalLoss(
-        alpha=cfg["loss"]["alpha"], gamma=cfg["loss"]["gamma"]
-    )
+    criterion = BinaryFocalLoss(alpha=cfg["loss"]["alpha"], gamma=cfg["loss"]["gamma"])
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg["training"]["lr"])
 
     # Train 5 epochs at a time before evaluating
@@ -76,6 +74,9 @@ def epoch_tuning(cfg, dataset_wrapper):
         if val_score > best_val_score:
             best_val_score = val_score
             best_epoch = epoch + 5
+
+        print(f"Validation score: {val_score:.4f}")
+        print(f"Best validation score: {best_val_score:.4f} at epoch {best_epoch}")
 
     print(f"Best validation score: {best_val_score:.4f} at epoch {best_epoch}")
     cfg["training"]["best_epoch"] = best_epoch
