@@ -52,6 +52,17 @@ def objective(
         alpha = cfg["loss"]["alpha"]
         gamma = cfg["loss"]["gamma"]
         lr = cfg["training"]["lr"]
+    
+    elif model_name == "lstm_freeze_gat":
+        lstm_hidden_dim = cfg["model"]["lstm_hidden_dim"]
+        lstm_layers = cfg["model"]["lstm_layers"]
+        epochs = cfg["training"]["epochs"]
+        lr = cfg["training"]["lr"]
+        alpha = cfg["loss"]["alpha"]
+        gamma = cfg["loss"]["gamma"]
+        gat_hidden_dim = trial.suggest_int("gat_hidden_dim", 16, 32)
+        gat_heads = trial.suggest_int("gat_heads", 1, 8)
+        fully_connected = trial.suggest_categorical("fully_connected", [True, False])
 
     else:
         raise ValueError(f"Model {model_name} not supported for hyperparameter tuning.")
@@ -89,6 +100,17 @@ def objective(
                 output_dim=cfg["model"]["output_dim"],
                 lstm_layers=lstm_layers,
             ).to(device)
+        elif model_name == "lstm_freeze_gat":
+            model = EEG_LSTM_GAT_Model(
+                input_dim=cfg["model"]["input_dim"],
+                lstm_hidden_dim=lstm_hidden_dim,
+                gat_hidden_dim=gat_hidden_dim,
+                output_dim=cfg["model"]["output_dim"],
+                gat_heads=gat_heads,
+                lstm_layers=lstm_layers,
+                fully_connected=fully_connected,
+            ).to(device)
+            model.load_and_freeze_lstm(cfg["model"]["lstm_pth_path"])
 
         criterion = BinaryFocalLoss(alpha=alpha, gamma=gamma)
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)

@@ -39,8 +39,18 @@ def final_training(cfg, dataset_wrapper):
             lstm_hidden_dim=cfg["model"]["lstm_hidden_dim"],
             output_dim=cfg["model"]["output_dim"],
             lstm_layers=cfg["model"]["lstm_layers"],
+        ).to(device)
+    elif cfg["model"]["name"] == "lstm_freeze_gat":
+        model = EEG_LSTM_GAT_Model(
+            input_dim=cfg["model"]["input_dim"],
+            lstm_hidden_dim=cfg["model"]["lstm_hidden_dim"],
+            gat_hidden_dim=cfg["model"]["gat_hidden_dim"],
+            output_dim=cfg["model"]["output_dim"],
+            gat_heads=cfg["model"]["gat_heads"],
+            lstm_layers=cfg["model"]["lstm_layers"],
             fully_connected=cfg["model"]["fully_connected"],
         ).to(device)
+        model.load_and_freeze_lstm(cfg["model"]["lstm_pth_path"])
     else:
         raise ValueError(
             f"Model {cfg['model']['model_name']} not supported for epoch tuning."

@@ -119,3 +119,23 @@ class EEG_LSTM_GAT_Model(nn.Module):
         logits = self.fc(graph_outputs)  # (batch, 1)
 
         return logits.squeeze(1)  # (batch,)
+
+    def load_and_freeze_lstm(self, path_to_pth):
+        state_dict = torch.load(path_to_pth, map_location='cpu')
+        
+        for i in range(self.num_electrodes):
+            # Extract keys for lstm_modules.i.*
+            submodule_prefix = f"lstm_modules.{i}."
+            lstm_state_dict = {
+                key[len(submodule_prefix):]: value
+                for key, value in state_dict.items()
+                if key.startswith(submodule_prefix)
+            }
+
+            # Load weights into corresponding LSTM module
+            self.lstm_modules[i].load_state_dict(lstm_state_dict)
+
+            # Freeze the weights
+            for param in self.lstm_modules[i].parameters():
+                param.requires_grad = False
+

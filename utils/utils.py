@@ -92,6 +92,10 @@ def save_config(cfg: dict, path: str, study: optuna.Study):
     elif cfg["model"]["name"] == "lstm":
         best_model_cfg["lstm_hidden_dim"] = best_params["lstm_hidden_dim"]
         best_model_cfg["lstm_layers"] = best_params["lstm_layers"]
+    elif cfg["model"]["name"] == "lstm_freeze_gat":
+        best_model_cfg["gat_hidden_dim"] = best_params["gat_hidden_dim"]
+        best_model_cfg["gat_heads"] = best_params["gat_heads"]
+        best_model_cfg["fully_connected"] = best_params["fully_connected"]
     best_config = {
         "model": best_model_cfg,
         "training": best_training_cfg,

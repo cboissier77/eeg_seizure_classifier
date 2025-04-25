@@ -1,0 +1,39 @@
+seed: 42
+data:
+  data_dir: "./data/data/"
+  train_split: 0.8
+  train_subsample: 1.0
+  validation_id_epoch_tuning: 's002'
+  hypertuning_subjects_ids:
+    - 's001'
+    - 's004'
+    - 's005'
+    - 's007'
+    - 's009'
+    - 's010'
+    - 's011'
+
+
+model:
+  name: "lstm_freeze_gat"
+  input_dim: 1
+  lstm_hidden_dim: 82
+  gat_hidden_dim: 64
+  output_dim: 1
+  gat_heads: 8
+  lstm_layers: 4
+  fully_connected: True
+  lstm_pth_path: "./results/trained_model_lstm.pth"
+
+training:
+  batch_size: 32
+  lr: 0.001
+  epochs: 5
+  best_model_path: "./results/trained_model.pth"
+  max_epochs: 30
+  n_trials: 10 # number of trials for hyperparameter tuning
+
+loss:
+  alpha: 0.75
+  gamma: 2.0
+
