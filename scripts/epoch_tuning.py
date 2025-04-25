@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 from training.train import train_model
-from models.lstm_gat import EEG_LSTM_GAT_Model
+from models.lstm_gat import EEG_LSTM_GAT_Model, EEG_LSTM_Model
 from training.losses import BinaryFocalLoss
 import yaml
 
@@ -48,6 +48,13 @@ def epoch_tuning(cfg, dataset_wrapper):
             gat_heads=cfg["model"]["gat_heads"],
             lstm_layers=cfg["model"]["lstm_layers"],
             fully_connected=cfg["model"]["fully_connected"],
+        ).to(device)
+    elif cfg["model"]["name"] == "lstm":
+        model = EEG_LSTM_Model(
+            input_dim=cfg["model"]["input_dim"],
+            lstm_hidden_dim=cfg["model"]["lstm_hidden_dim"],
+            output_dim=cfg["model"]["output_dim"],
+            lstm_layers=cfg["model"]["lstm_layers"],
         ).to(device)
     else:
         raise ValueError(

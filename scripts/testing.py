@@ -2,7 +2,7 @@
 from sklearn.metrics import roc_auc_score, f1_score
 import torch
 from torch.utils.data import DataLoader
-from models.lstm_gat import EEG_LSTM_GAT_Model
+from models.lstm_gat import EEG_LSTM_GAT_Model, EEG_LSTM_Model
 import pandas as pd
 
 
@@ -27,12 +27,22 @@ def testing(cfg, dataset_wrapper):
             fully_connected=cfg["model"]["fully_connected"],
         ).to(device)
 
-        # Load the model weights
-        model_path = cfg["model"]["best_model_path"]
-        model.load_state_dict(torch.load(model_path))
+    elif cfg["model"]["name"] == "lstm":
+        # Load the model
+        model = EEG_LSTM_Model(
+            input_dim=cfg["model"]["input_dim"],
+            lstm_hidden_dim=cfg["model"]["lstm_hidden_dim"],
+            output_dim=cfg["model"]["output_dim"],
+            lstm_layers=cfg["model"]["lstm_layers"],
+            fully_connected=cfg["model"]["fully_connected"],
+        ).to(device)
+
     else:
         raise ValueError(f"Model {cfg['model']['name']} not supported for testing.")
 
+    # Load the model weights
+    model_path = cfg["model"]["best_model_path"]
+    model.load_state_dict(torch.load(model_path))
     # Create test dataset
     dataset_te = dataset_wrapper.test_dataset()
     # Create DataLoader for the test dataset
@@ -70,7 +80,6 @@ def testing(cfg, dataset_wrapper):
     all_ids = [str(i).replace("__", "$$") for i in all_ids]
     all_ids = [i.replace("_", "") for i in all_ids]
     all_ids = [i.replace("$$", "_") for i in all_ids]
-    print(all_ids)
     submission_df = pd.DataFrame({"id": all_ids, "label": all_predictions})
 
     # Save the DataFrame to a CSV file without an index

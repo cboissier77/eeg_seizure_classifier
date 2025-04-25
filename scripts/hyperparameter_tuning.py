@@ -8,7 +8,7 @@ from utils.utils import (
     save_config,
 )
 from training.train import train_model
-from models.lstm_gat import EEG_LSTM_GAT_Model
+from models.lstm_gat import EEG_LSTM_GAT_Model, EEG_LSTM_Model
 from training.losses import BinaryFocalLoss
 
 
@@ -44,6 +44,15 @@ def objective(
         gamma = trial.suggest_float("gamma", 0.5, 5.0)
         fully_connected = trial.suggest_categorical("fully_connected", [True, False])
 
+    elif model_name == "lstm":
+        # lstm_hidden_dim = trial.suggest_int("lstm_hidden_dim", 32, 256)
+        lstm_hidden_dim = trial.suggest_int("lstm_hidden_dim", 32, 100)
+        lstm_layers = trial.suggest_int("lstm_layers", 1, 4)
+        epochs = cfg["training"]["epochs"]
+        alpha = cfg["loss"]["alpha"]
+        gamma = cfg["loss"]["gamma"]
+        lr = cfg["training"]["lr"]
+
     else:
         raise ValueError(f"Model {model_name} not supported for hyperparameter tuning.")
     ############################################################################################################
@@ -72,6 +81,13 @@ def objective(
                 gat_heads=gat_heads,
                 lstm_layers=lstm_layers,
                 fully_connected=fully_connected,
+            ).to(device)
+        elif model_name == "lstm":
+            model = EEG_LSTM_Model(
+                input_dim=cfg["model"]["input_dim"],
+                lstm_hidden_dim=lstm_hidden_dim,
+                output_dim=cfg["model"]["output_dim"],
+                lstm_layers=lstm_layers,
             ).to(device)
 
         criterion = BinaryFocalLoss(alpha=alpha, gamma=gamma)

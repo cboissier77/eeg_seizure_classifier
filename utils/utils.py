@@ -40,7 +40,13 @@ def parse_args():
     parser.add_argument(
         "--mode",
         type=str,
-        choices=["hyperparameter_tuning", "epoch_tuning","final_training","testing","push_to_hub"]
+        choices=[
+            "hyperparameter_tuning",
+            "epoch_tuning",
+            "final_training",
+            "testing",
+            "push_to_hub",
+        ],
     )
     return parser.parse_args()
 
@@ -71,7 +77,7 @@ def save_config(cfg: dict, path: str, study: optuna.Study):
     best_seed_cfg = copy.deepcopy(cfg["seed"])
     best_data_cfg = copy.deepcopy(cfg["data"])
 
-    if cfg["model"]["model_name"] == "lstm_gat":
+    if cfg["model"]["name"] == "lstm_gat":
 
         best_model_cfg["lstm_hidden_dim"] = best_params["lstm_hidden_dim"]
         best_model_cfg["gat_hidden_dim"] = best_params["gat_hidden_dim"]
@@ -83,7 +89,9 @@ def save_config(cfg: dict, path: str, study: optuna.Study):
         best_model_cfg["lstm_layers"] = best_params["lstm_layers"]
         best_model_cfg["fully_connected"] = best_params["fully_connected"]
         best_training_cfg["batch_size"] = cfg["training"]["batch_size"]
-
+    elif cfg["model"]["name"] == "lstm":
+        best_model_cfg["lstm_hidden_dim"] = best_params["lstm_hidden_dim"]
+        best_model_cfg["lstm_layers"] = best_params["lstm_layers"]
     best_config = {
         "model": best_model_cfg,
         "training": best_training_cfg,
