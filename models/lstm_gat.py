@@ -97,9 +97,6 @@ class EEG_LSTM_GAT_Model(nn.Module):
         # x: (batch, seq_len=354, num_electrodes=19)
         batch_size, seq_len, num_electrodes = x.shape
         assert num_electrodes == self.num_electrodes, "Input should have 19 electrodes"
-
-        x = (x - x.mean(dim=1, keepdim=True)) / (x.std(dim=1, keepdim=True) + 1e-6)
-
         lstm_outputs = []
         for i in range(self.num_electrodes):
             electrode_input = x[:, :, i].unsqueeze(-1)  # (batch, seq_len, 1)
