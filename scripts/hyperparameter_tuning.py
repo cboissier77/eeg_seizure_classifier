@@ -8,7 +8,7 @@ from utils.utils import (
     save_config,
 )
 from training.train import train_model
-from models.lstm_gat import EEG_LSTM_GAT_Model, EEG_LSTM_Model
+from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model
 from training.losses import BinaryFocalLoss
 
 

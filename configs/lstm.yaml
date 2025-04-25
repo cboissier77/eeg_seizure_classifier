@@ -27,7 +27,7 @@ training:
   epochs: 5
   best_model_path: "./results/trained_model.pth"
   max_epochs: 30
-  n_trials: 10 # number of trials for hyperparameter tuning
+  n_trials: 5 # number of trials for hyperparameter tuning
 
 loss:
   alpha: 0.75

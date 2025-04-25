@@ -2,7 +2,7 @@
 from sklearn.metrics import roc_auc_score, f1_score
 import torch
 from torch.utils.data import DataLoader
-from models.lstm_gat import EEG_LSTM_GAT_Model, EEG_LSTM_Model
+from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model
 import pandas as pd
 
 
@@ -14,7 +14,7 @@ def testing(cfg, dataset_wrapper):
         dataset_wrapper (EEGDatasetWrapper): Wrapper for the EEG dataset.
     """
     # Set the device to GPU if available, otherwise use CPU
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     if cfg["model"]["name"] == "lstm_gat":
         # Load the model
         model = EEG_LSTM_GAT_Model(
@@ -41,7 +41,7 @@ def testing(cfg, dataset_wrapper):
         raise ValueError(f"Model {cfg['model']['name']} not supported for testing.")
 
     # Load the model weights
-    model_path = cfg["model"]["best_model_path"]
+    model_path = cfg["training"]["best_model_path"]
     model.load_state_dict(torch.load(model_path))
     # Create test dataset
     dataset_te = dataset_wrapper.test_dataset()

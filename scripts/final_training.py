@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 from training.train import train_model
-from models.lstm_gat import EEG_LSTM_GAT_Model, EEG_LSTM_Model
+from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model
 from training.losses import BinaryFocalLoss
 
 
@@ -59,5 +59,5 @@ def final_training(cfg, dataset_wrapper):
     )
     # Save the model
     torch.save(model.state_dict(), cfg["training"]["best_model_path"])
-    print(f"Model saved to {cfg['training']['model_save_path']}")
+    print(f"Model saved to {cfg['training']['best_model_path']}")
     return

@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 from training.train import train_model
-from models.lstm_gat import EEG_LSTM_GAT_Model, EEG_LSTM_Model
+from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model
 from training.losses import BinaryFocalLoss
 import yaml
 
