@@ -1,16 +1,21 @@
 from pathlib import Path
 
 import pandas as pd
-from data.preprocess import downsample
+from data.preprocess import downsample, fft_filtering, time_filtering
 from seiz_eeg.dataset import EEGDataset
 
 
 class EEGDatasetWrapper:
-    def __init__(self, data_dir: str):
+    def __init__(self, data_dir: str, preprocessing:str = "downsample"):
         """
         Initialize the EEG dataset wrapper.
         Args:
             data_dir (str): Path to the directory containing the EEG data.
+            preprocessing (str): Preprocessing method to apply to the data. Options are:
+                - "downsample": Downsample the signal to 300 samples.
+                - "fft_filtering": Apply FFT filtering to the signal.
+                - "time_filtering": Apply time filtering to the signal.
+                - "raw": No preprocessing.
         """
         self.data_root = Path(data_dir)
         self.clips_tr = pd.read_parquet(self.data_root / "train/segments.parquet")
@@ -18,6 +23,17 @@ class EEGDatasetWrapper:
         ids = self.clips_tr["signals_path"].astype(str).tolist()
         ids = list(map(lambda x: x[x.find("_") + 1 : x.find("_") + 5], ids))
         self.clips_tr["subject_id"] = ids
+        # switch case for preprocessing
+        if preprocessing == "downsample":
+            self.preprocessing = downsample
+        elif preprocessing == "fft_filtering":
+            self.preprocessing = fft_filtering
+        elif preprocessing == "time_filtering":
+            self.preprocessing = time_filtering
+        elif preprocessing == "raw":
+            self.preprocessing = None
+        else:
+            raise ValueError(f"Unknown preprocessing method: {preprocessing}")
 
     def num_subjects(self):
         """Get the number of unique subjects in the dataset.
@@ -56,13 +72,13 @@ class EEGDatasetWrapper:
         train_dataset = EEGDataset(
             train_dataset,
             signals_root=self.data_root / "train",
-            signal_transform=downsample,
+            signal_transform=self.preprocessing,
             prefetch=True,
         )
         val_dataset = EEGDataset(
             val_dataset,
             signals_root=self.data_root / "train",
-            signal_transform=downsample,
+            signal_transform=self.preprocessing,
             prefetch=True,
         )
 
@@ -78,7 +94,7 @@ class EEGDatasetWrapper:
         train_dataset = EEGDataset(
             train_dataset,
             signals_root=self.data_root / "train",
-            signal_transform=downsample,
+            signal_transform=self.preprocessing,
             prefetch=True,
         )
 
@@ -92,7 +108,7 @@ class EEGDatasetWrapper:
         test_dataset = EEGDataset(
             self.clips_te,
             signals_root=self.data_root / "test",
-            signal_transform=downsample,
+            signal_transform=self.preprocessing,
             prefetch=True,
             return_id=True,
         )

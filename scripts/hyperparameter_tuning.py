@@ -8,7 +8,7 @@ from utils.utils import (
     save_config,
 )
 from training.train import train_model
-from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model
+from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model, EEG_Transformer_Model
 from training.losses import BinaryFocalLoss
 
 
@@ -64,6 +64,17 @@ def objective(
         gat_heads = trial.suggest_int("gat_heads", 1, 8)
         fully_connected = trial.suggest_categorical("fully_connected", [True, False])
 
+    elif model_name == "transformer_encoder":
+         
+        epochs = cfg["training"]["epochs"]
+        alpha = cfg["loss"]["alpha"]
+        gamma = cfg["loss"]["gamma"]
+        lr = cfg["training"]["lr"]
+        embed_dim = trial.suggest_int("embed_dim", 32, 128)
+        num_layers = trial.suggest_int("num_layers", 1, 4)
+        nhead = trial.suggest_int("nhead", 1, 8)
+
+
     else:
         raise ValueError(f"Model {model_name} not supported for hyperparameter tuning.")
     ############################################################################################################
@@ -111,6 +122,15 @@ def objective(
                 fully_connected=fully_connected,
             ).to(device)
             model.load_and_freeze_lstm(cfg["model"]["lstm_pth_path"])
+        elif model_name == "transformer_encoder":
+            model = EEG_Transformer_Model(
+                input_dim=cfg["model"]["input_dim"],
+                embed_dim=embed_dim,
+                output_dim=cfg["model"]["output_dim"],
+                patch_size=cfg["model"]["patch_size"],
+                num_layers=num_layers,
+                nhead=nhead,
+            ).to(device)
 
         criterion = BinaryFocalLoss(alpha=alpha, gamma=gamma)
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)

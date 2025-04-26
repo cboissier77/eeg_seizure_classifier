@@ -19,20 +19,21 @@ def main():
     cfg = load_config(args.config)
     torch.manual_seed(cfg.get("seed", 42))
     random.seed(cfg.get("seed", 42))
-    dataset_wrapper = EEGDatasetWrapper(cfg["data"]["data_dir"])
+
+    dataset_wrapper = EEGDatasetWrapper(cfg["data"]["data_dir"], cfg["data"]["preprocessing"])
     if args.mode == "hyperparameter_tuning":
         print("Hyperparameter tuning...")
         hyperparameter_tuning(cfg, dataset_wrapper)
-    if args.mode == "epoch_tuning":
+    elif args.mode == "epoch_tuning":
         print("Epoch tuning...")
         epoch_tuning(cfg, dataset_wrapper)
-    if args.mode == "final_training":
+    elif args.mode == "final_training":
         print("Final training...")
         final_training(cfg, dataset_wrapper)
-    if args.mode == "testing":
+    elif args.mode == "testing":
         print("Testing...")
         testing(cfg, dataset_wrapper)
-    if args.mode == "push_to_hub":
+    elif args.mode == "push_to_hub":
         print("Pushing to hub...")
         push_to_hub(cfg, dataset_wrapper)
     else:

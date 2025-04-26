@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 from training.train import train_model
-from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model
+from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model, EEG_Transformer_Model
 from training.losses import BinaryFocalLoss
 
 
@@ -51,6 +51,15 @@ def final_training(cfg, dataset_wrapper):
             fully_connected=cfg["model"]["fully_connected"],
         ).to(device)
         model.load_and_freeze_lstm(cfg["model"]["lstm_pth_path"])
+    elif cfg["model"]["name"] == "transformer_encoder":
+        model = EEG_Transformer_Model(
+            input_dim=cfg["model"]["input_dim"],
+            embed_dim=cfg["model"]["embed_dim"],
+            output_dim=cfg["model"]["output_dim"],
+            patch_size=cfg["model"]["patch_size"],
+            num_layers=cfg["model"]["num_layers"],
+            nhead=cfg["model"]["nhead"],
+        ).to(device)
     else:
         raise ValueError(
             f"Model {cfg['model']['model_name']} not supported for epoch tuning."

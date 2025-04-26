@@ -2,7 +2,7 @@
 from sklearn.metrics import roc_auc_score, f1_score
 import torch
 from torch.utils.data import DataLoader
-from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model
+from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model, EEG_Transformer_Model
 import pandas as pd
 
 
@@ -47,6 +47,16 @@ def testing(cfg, dataset_wrapper):
             fully_connected=cfg["model"]["fully_connected"],
         ).to(device)
         model.load_and_freeze_lstm(cfg["model"]["lstm_pth_path"])
+    elif cfg["model"]["name"] == "transformer_encoder":
+        # Load the model
+        model = EEG_Transformer_Model(
+            input_dim=cfg["model"]["input_dim"],
+            embed_dim=cfg["model"]["embed_dim"],
+            output_dim=cfg["model"]["output_dim"],
+            patch_size=cfg["model"]["patch_size"],
+            num_layers=cfg["model"]["num_layers"],
+            nhead=cfg["model"]["nhead"],
+        ).to(device)
 
     else:
         raise ValueError(f"Model {cfg['model']['name']} not supported for testing.")
@@ -94,5 +104,5 @@ def testing(cfg, dataset_wrapper):
     submission_df = pd.DataFrame({"id": all_ids, "label": all_predictions})
 
     # Save the DataFrame to a CSV file without an index
-    submission_df.to_csv("submission_seed1.csv", index=False)
+    submission_df.to_csv("submission.csv", index=False)
     print("Kaggle submission file generated: submission.csv")
