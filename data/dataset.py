@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
-from data.preprocess import downsample, fft_filtering, time_filtering
+from data.preprocess import downsample, fft_filtering, time_filtering, normalize
 from seiz_eeg.dataset import EEGDataset
 
 
@@ -32,6 +32,8 @@ class EEGDatasetWrapper:
             self.preprocessing = time_filtering
         elif preprocessing == "raw":
             self.preprocessing = None
+        elif preprocessing == "normalize":
+            self.preprocessing = normalize
         else:
             raise ValueError(f"Unknown preprocessing method: {preprocessing}")
 

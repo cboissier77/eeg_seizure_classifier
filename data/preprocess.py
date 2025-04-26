@@ -24,3 +24,12 @@ def downsample(x: np.ndarray) -> np.ndarray:
     downsampled_signal = signal.resample(x, 300, axis=0)
     
     return downsampled_signal
+
+def normalize(x: np.ndarray) -> np.ndarray:
+    """Normalize min-max"""
+    range_val = np.max(x) - np.min(x)
+    if range_val == 0:
+        x = np.zeros_like(x)  # Handle constant arrays
+    else:
+        x = (x - np.min(x)) / range_val
+    return x

@@ -70,9 +70,10 @@ def objective(
         alpha = cfg["loss"]["alpha"]
         gamma = cfg["loss"]["gamma"]
         lr = cfg["training"]["lr"]
-        embed_dim = trial.suggest_int("embed_dim", 32, 128)
-        num_layers = trial.suggest_int("num_layers", 1, 4)
-        nhead = trial.suggest_int("nhead", 1, 8)
+        embed_dim = trial.suggest_categorical("embed_dim", [32, 64, 128])
+        num_layers = trial.suggest_int("num_layers", 1, 2)
+        nhead = trial.suggest_categorical("nhead", [1, 2, 4, 8])
+        patch_size = trial.suggest_categorical("patch_size", [10, 30, 100, 300, 1000])
 
 
     else:
@@ -127,7 +128,7 @@ def objective(
                 input_dim=cfg["model"]["input_dim"],
                 embed_dim=embed_dim,
                 output_dim=cfg["model"]["output_dim"],
-                patch_size=cfg["model"]["patch_size"],
+                patch_size=patch_size,
                 num_layers=num_layers,
                 nhead=nhead,
             ).to(device)

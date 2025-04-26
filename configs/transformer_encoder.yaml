@@ -12,7 +12,7 @@ data:
     - 's009'
     - 's010'
     - 's011'
-  preprocessing: "raw"
+  preprocessing: "normalize"
 
 
 model:
@@ -26,8 +26,8 @@ model:
   
 training:
   batch_size: 32
-  lr: 0.001
-  epochs: 5
+  lr: 0.00005
+  epochs: 3
   best_model_path: "./results/trained_model.pth"
   max_epochs: 30
   n_trials: 5 # number of trials for hyperparameter tuning
