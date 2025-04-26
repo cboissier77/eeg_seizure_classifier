@@ -101,6 +101,14 @@ def epoch_tuning(cfg, dataset_wrapper):
         if val_score > best_val_score:
             best_val_score = val_score
             best_epoch = epoch + 5
+            # save the model 
+            print(f"New best model found at epoch {best_epoch} with score {best_val_score:.4f}")
+            torch.save(
+                model.state_dict(),
+                cfg["training"]["best_model_path"].replace(
+                    "trained_model.pth", f"epoch_{best_epoch}.pth"
+                ),
+            )
 
         print(f"Validation score: {val_score:.4f}")
         print(f"Best validation score: {best_val_score:.4f} at epoch {best_epoch}")

@@ -22,5 +22,9 @@ def fft_filtering(x: np.ndarray) -> np.ndarray:
 def downsample(x: np.ndarray) -> np.ndarray:
     """Downsample the signal to 300 samples"""
     downsampled_signal = signal.resample(x, 300, axis=0)
-    
+    # min max normalization
+    range = np.max(downsampled_signal) - np.min(downsampled_signal)
+    if range == 0:
+        return downsampled_signal
+    downsampled_signal = (downsampled_signal - np.min(downsampled_signal)) / range
     return downsampled_signal
