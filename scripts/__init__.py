@@ -4,5 +4,6 @@ from .hyperparameter_tuning import hyperparameter_tuning
 from .final_training import final_training
 from .testing import testing
 from .push_to_hub import push_to_hub
+from .fine_tuning import fine_tuning
 
 

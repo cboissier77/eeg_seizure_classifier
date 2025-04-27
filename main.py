@@ -11,6 +11,7 @@ from scripts import (
     final_training,
     testing,
     push_to_hub,
+    fine_tuning,
 )
 
 
@@ -30,6 +31,9 @@ def main():
     elif args.mode == "final_training":
         print("Final training...")
         final_training(cfg, dataset_wrapper)
+    elif args.mode == "fine_tuning":
+        print("Fine tuning...")
+        fine_tuning(cfg, dataset_wrapper)
     elif args.mode == "testing":
         print("Testing...")
         testing(cfg, dataset_wrapper)
