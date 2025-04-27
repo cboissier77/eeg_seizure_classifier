@@ -52,15 +52,14 @@ def fine_tuning(cfg, dataset_wrapper):
 
     else:
         raise ValueError(
-            f"Model {cfg['model']['model_name']} not supported for epoch tuning."
+            f"Model {cfg['model']['name']} not supported for epoch tuning."
         )
     
-    # Load the model state dict if provided
-    if cfg["training"]["load_model_path"]:
-        model.load_state_dict(
-            torch.load(cfg["model"]["model_pth_path"], map_location=device)
+
+    model.load_state_dict(
+        torch.load(cfg["model"]["model_pth_path"], map_location=device)
         )
-        print(f"Model loaded from {cfg["model"]["model_pth_path"]}")
+    print(f"Model loaded from {cfg['model']['model_pth_path']}")
     # unfreeze the model
     for param in model.parameters():
         param.requires_grad = True

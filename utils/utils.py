@@ -46,6 +46,7 @@ def parse_args():
             "final_training",
             "testing",
             "push_to_hub",
+            "fine_tuning",
         ],
     )
     return parser.parse_args()
