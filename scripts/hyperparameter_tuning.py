@@ -56,10 +56,10 @@ def objective(
         lstm_hidden_dim = cfg["model"]["lstm_hidden_dim"]
         lstm_layers = cfg["model"]["lstm_layers"]
         epochs = cfg["training"]["epochs"]
-        lr = cfg["training"]["lr"]
-        alpha = cfg["loss"]["alpha"]
-        gamma = cfg["loss"]["gamma"]
-        gat_hidden_dim = trial.suggest_int("gat_hidden_dim", 16, 32)
+        lr = trial.suggest_float("lr", 1e-5, 1e-2, log=True)
+        alpha = trial.suggest_float("alpha", 0.7, 0.9)
+        gamma = trial.suggest_float("gamma", 0.5, 5.0)
+        gat_hidden_dim = trial.suggest_int("gat_hidden_dim", 16, 64)
         gat_heads = trial.suggest_int("gat_heads", 1, 8)
         fully_connected = trial.suggest_categorical("fully_connected", [True, False])
 

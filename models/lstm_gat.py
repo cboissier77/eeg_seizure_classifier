@@ -27,7 +27,7 @@ class ElectrodeLSTM(nn.Module):
 
 
 class EEG_LSTM_GAT_Model(nn.Module):
-    def __init__(self, input_dim=1, lstm_hidden_dim=32, gat_hidden_dim=64, output_dim=1, gat_heads=8,lstm_layers=1, fully_connected=True):
+    def __init__(self, input_dim=1, lstm_hidden_dim=32, gat_hidden_dim=64, output_dim=1, gat_heads=8, lstm_layers=1, fully_connected=True):
         super(EEG_LSTM_GAT_Model, self).__init__()
         self.num_electrodes = 19
         self.bidirectional = True
@@ -43,13 +43,18 @@ class EEG_LSTM_GAT_Model(nn.Module):
             in_channels=self.lstm_hidden_dim,
             out_channels=gat_hidden_dim,
             heads=gat_heads,
-            concat=True  # default: output shape is [N, heads * out_channels]
+            concat=True
         )
 
-        self.fc = nn.Linear(gat_hidden_dim * gat_heads, output_dim)
+        self.gat_output_dim = gat_hidden_dim * gat_heads
+
+        # Projection layer to match LSTM avg and GAT output dims
+        self.lstm_proj = nn.Linear(self.lstm_hidden_dim, self.gat_output_dim)
+
+        self.fc = nn.Linear(self.gat_output_dim, output_dim)
         self.edge_index = self.build_fully_connected_graph(self.num_electrodes) if fully_connected else self.build_eeg_graph()
-  
-    
+        self.alpha = nn.Parameter(torch.tensor(0.5))  # Start with 50-50 mixing
+        self.sigmoid = nn.Sigmoid()  # To keep alpha between 0 and 1
 
 
     def build_fully_connected_graph(self, num_nodes):
@@ -59,7 +64,7 @@ class EEG_LSTM_GAT_Model(nn.Module):
                 if i != j:
                     edge_index.append([i, j])
         return torch.tensor(edge_index, dtype=torch.long).t()
-    
+
     def build_eeg_graph(self):
         electrode_labels = [
             "Fp1", "Fp2", "F3", "F4", "C3", "C4", "P3",
@@ -79,7 +84,6 @@ class EEG_LSTM_GAT_Model(nn.Module):
             ("T5", "O1"), ("P3", "O1"), ("P4", "O2"), ("T6", "O2")
         ]
 
-        # Convert label edges to index edges
         label_to_index = {label: idx for idx, label in enumerate(electrode_labels)}
         edge_index = []
 
@@ -87,52 +91,52 @@ class EEG_LSTM_GAT_Model(nn.Module):
             src = label_to_index[src_label]
             dst = label_to_index[dst_label]
             edge_index.append([src, dst])
-            edge_index.append([dst, src])  # add reverse for undirected graph
+            edge_index.append([dst, src])
 
-        edge_index = torch.tensor(edge_index, dtype=torch.long).t()  # Shape [2, num_edges]
-        return edge_index
-
+        return torch.tensor(edge_index, dtype=torch.long).t()
 
     def forward(self, x):
-        # x: (batch, seq_len=354, num_electrodes=19)
         batch_size, seq_len, num_electrodes = x.shape
         assert num_electrodes == self.num_electrodes, "Input should have 19 electrodes"
+
         lstm_outputs = []
         for i in range(self.num_electrodes):
-            electrode_input = x[:, :, i].unsqueeze(-1)  # (batch, seq_len, 1)
-            out = self.lstm_modules[i](electrode_input)  # (batch, hidden_dim * 2)
+            electrode_input = x[:, :, i].unsqueeze(-1)
+            out = self.lstm_modules[i](electrode_input)
             lstm_outputs.append(out)
 
-        node_features = torch.stack(lstm_outputs, dim=1)  # (batch, 19, hidden_dim * 2)
+        node_features = torch.stack(lstm_outputs, dim=1)
+
+        avg_lstm_output = node_features.mean(dim=1)  # (batch, hidden_dim * 2)
+        avg_lstm_output_proj = self.lstm_proj(avg_lstm_output)  # (batch, gat_hidden_dim * heads)
 
         graph_outputs = []
         edge_index = self.edge_index.to(node_features.device)
         for b in range(batch_size):
             out = self.gat(node_features[b], edge_index)  # (19, gat_hidden_dim * heads)
-            pooled = out.mean(dim=0) #self.pool(out)   #out.mean(dim=0)  # global mean pooling
+            pooled = out.mean(dim=0)
             graph_outputs.append(pooled)
 
         graph_outputs = torch.stack(graph_outputs, dim=0)  # (batch, gat_hidden_dim * heads)
-        logits = self.fc(graph_outputs)  # (batch, 1)
+        # Compute mixing weight
+        alpha = self.sigmoid(self.alpha)
 
-        return logits.squeeze(1)  # (batch,)
+        # Residual connection with learnable weight
+        combined = alpha * graph_outputs + (1 - alpha) * avg_lstm_output_proj
+
+        logits = self.fc(combined)
+
+        return logits.squeeze(1)
 
     def load_and_freeze_lstm(self, path_to_pth):
         state_dict = torch.load(path_to_pth, map_location='cpu')
-        
         for i in range(self.num_electrodes):
-            # Extract keys for lstm_modules.i.*
             submodule_prefix = f"lstm_modules.{i}."
             lstm_state_dict = {
                 key[len(submodule_prefix):]: value
                 for key, value in state_dict.items()
                 if key.startswith(submodule_prefix)
             }
-
-            # Load weights into corresponding LSTM module
             self.lstm_modules[i].load_state_dict(lstm_state_dict)
-
-            # Freeze the weights
             for param in self.lstm_modules[i].parameters():
                 param.requires_grad = False
-

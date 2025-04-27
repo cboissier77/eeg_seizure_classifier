@@ -99,6 +99,9 @@ def save_config(cfg: dict, path: str, study: optuna.Study):
         best_model_cfg["gat_hidden_dim"] = best_params["gat_hidden_dim"]
         best_model_cfg["gat_heads"] = best_params["gat_heads"]
         best_model_cfg["fully_connected"] = best_params["fully_connected"]
+        best_training_cfg["lr"] = best_params["lr"]
+        best_loss_cfg["alpha"] = best_params["alpha"]
+        best_loss_cfg["gamma"] = best_params["gamma"]
     elif cfg["model"]["name"] == "transformer_encoder":
         best_model_cfg["embed_dim"] = best_params["embed_dim"]
         best_model_cfg["num_layers"] = best_params["num_layers"]
