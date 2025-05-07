@@ -1,0 +1,34 @@
+data:
+  data_dir: ./data/data/
+  hypertuning_subjects_ids:
+  - s001
+  - s004
+  - s005
+  - s007
+  - s009
+  - s010
+  - s011
+  preprocessing: fft_filtering
+  train_split: 0.8
+  train_subsample: 1.0
+  validation_id_epoch_tuning: s002
+loss:
+  alpha: 0.7894271527923202
+  gamma: 3.593331171049243
+model:
+  L: 3
+  hidden_dim: 32
+  input_dim: 354
+  name: gt
+  norm: BN
+  num_heads: 8
+  output_dim: 1
+  pos_enc_dim: 14
+seed: 42
+training:
+  batch_size: 32
+  best_model_path: ./results/epoch_25.pth
+  epochs: 3
+  lr: 0.0016967723822929387
+  max_epochs: 30
+  n_trials: 30

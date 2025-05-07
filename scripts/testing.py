@@ -2,7 +2,7 @@
 from sklearn.metrics import roc_auc_score, f1_score
 import torch
 from torch.utils.data import DataLoader
-from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model, EEG_Transformer_Model
+from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model, EEG_Transformer_Model, EEG_GAT_Model, EEG_GraphTransformer
 import pandas as pd
 
 
@@ -35,6 +35,15 @@ def testing(cfg, dataset_wrapper):
             output_dim=cfg["model"]["output_dim"],
             lstm_layers=cfg["model"]["lstm_layers"],
         ).to(device)
+    elif cfg["model"]["name"] == "gat":
+        # Load the model
+        model = EEG_GAT_Model(
+            input_dim=cfg["model"]["input_dim"],
+            gat_hidden_dim=cfg["model"]["gat_hidden_dim"],
+            output_dim=cfg["model"]["output_dim"],
+            gat_heads=cfg["model"]["gat_heads"],
+            fully_connected=cfg["model"]["fully_connected"],
+        ).to(device)
     elif cfg["model"]["name"] == "lstm_freeze_gat":
         # Load the model
         model = EEG_LSTM_GAT_Model(
@@ -56,6 +65,17 @@ def testing(cfg, dataset_wrapper):
             patch_size=cfg["model"]["patch_size"],
             num_layers=cfg["model"]["num_layers"],
             nhead=cfg["model"]["nhead"],
+        ).to(device)
+    elif cfg["model"]["name"] == "gt":
+        # Load the model
+        model = EEG_GraphTransformer(
+            input_dim=cfg["model"]["input_dim"],
+            pos_enc_dim=cfg["model"]["pos_enc_dim"],
+            hidden_dim=cfg["model"]["hidden_dim"],
+            output_dim=cfg["model"]["output_dim"],
+            num_heads=cfg["model"]["num_heads"],
+            norm=cfg["model"]["norm"],
+            L=cfg["model"]["L"],
         ).to(device)
 
     else:

@@ -12,25 +12,26 @@ data:
     - 's009'
     - 's010'
     - 's011'
-  preprocessing: "downsample"
-  ar_model: true
-  lag: 20
+  preprocessing: "fft_filtering"
 
 
 model:
-  name: "lstm"
-  input_dim: 1
-  lstm_hidden_dim: 32
+  name: "gt"
+  input_dim: 354
+  pos_enc_dim: 4
+  hidden_dim: 64
   output_dim: 1
-  lstm_layers: 1
-
+  num_heads: 2
+  norm: LN
+  L: 1
+  
 training:
   batch_size: 32
-  lr: 0.001
-  epochs: 5
-  best_model_path: "./results/trained_model.pth"
+  lr: 0.00005
+  epochs: 3
+  best_model_path: "./results/epoch_25.pth"
   max_epochs: 30
-  n_trials: 5 # number of trials for hyperparameter tuning
+  n_trials: 30 # number of trials for hyperparameter tuning
 
 loss:
   alpha: 0.75

@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 from training.train import train_model
-from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model, EEG_Transformer_Model
+from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model, EEG_Transformer_Model, EEG_GAT_Model, EEG_GraphTransformer
 from training.losses import BinaryFocalLoss
 import yaml
 
@@ -26,7 +26,7 @@ def epoch_tuning(cfg, dataset_wrapper):
     ]  # ID of the subject to be used for validation
     selected_ids.remove(validation_id)
     train_dataset, val_dataset = dataset_wrapper.leave_one_out_split(
-        validation_id, selected_ids
+        validation_id, selected_ids,ar_model=cfg["data"]["ar_model"], lag=cfg["data"]["lag"]
     )
     train_loader = DataLoader(
         train_dataset, batch_size=cfg["training"]["batch_size"], shuffle=True
@@ -56,6 +56,14 @@ def epoch_tuning(cfg, dataset_wrapper):
             output_dim=cfg["model"]["output_dim"],
             lstm_layers=cfg["model"]["lstm_layers"],
         ).to(device)
+    elif cfg["model"]["name"] == "gat":
+        model = EEG_GAT_Model(
+            input_dim=cfg["model"]["input_dim"],
+            gat_hidden_dim=cfg["model"]["gat_hidden_dim"],
+            output_dim=cfg["model"]["output_dim"],
+            gat_heads=cfg["model"]["gat_heads"],
+            fully_connected=cfg["model"]["fully_connected"],
+        ).to(device)
     elif cfg["model"]["name"] == "lstm_freeze_gat":
         model = EEG_LSTM_GAT_Model(
             input_dim=cfg["model"]["input_dim"],
@@ -75,6 +83,16 @@ def epoch_tuning(cfg, dataset_wrapper):
             patch_size=cfg["model"]["patch_size"],
             num_layers=cfg["model"]["num_layers"],
             nhead=cfg["model"]["nhead"],
+        ).to(device)
+    elif cfg["model"]["name"] == "gt":
+        model = EEG_GraphTransformer(
+            input_dim=cfg["model"]["input_dim"],
+            pos_enc_dim=cfg["model"]["pos_enc_dim"],
+            hidden_dim=cfg["model"]["hidden_dim"],
+            output_dim=cfg["model"]["output_dim"],
+            num_heads=cfg["model"]["num_heads"],
+            norm=cfg["model"]["norm"],
+            L=cfg["model"]["L"],
         ).to(device)
     else:
         raise ValueError(
@@ -101,6 +119,13 @@ def epoch_tuning(cfg, dataset_wrapper):
         if val_score > best_val_score:
             best_val_score = val_score
             best_epoch = epoch + 5
+            print(f"New best model found at epoch {best_epoch} with score {best_val_score:.4f}")
+            torch.save(
+                model.state_dict(),
+                cfg["training"]["best_model_path"].replace(
+                    "trained_model.pth", f"epoch_{best_epoch}.pth"
+                ),
+            )
 
         print(f"Validation score: {val_score:.4f}")
         print(f"Best validation score: {best_val_score:.4f} at epoch {best_epoch}")

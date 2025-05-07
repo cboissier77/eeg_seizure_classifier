@@ -1,0 +1,16 @@
+loss:
+  alpha: 0.675495330591432
+  gamma: 1.5879229711737823
+model:
+  fully_connected: true
+  gat_heads: 5
+  gat_hidden_dim: 57
+  input_dim: 1
+  lstm_hidden_dim: 77
+  lstm_layers: 3
+  output_dim: 1
+training:
+  batch_size: 32
+  best_model_path: ./results
+  epochs: 24
+  lr: 9.764572383672497e-05

@@ -1,0 +1,18 @@
+loss:
+  alpha: 0.6342932127749127
+  gamma: 2.1584337404093206
+model:
+  fully_connected: true
+  gat_heads: 5
+  gat_hidden_dim: 22
+  input_dim: 1
+  lstm_hidden_dim: 98
+  lstm_layers: 1
+  output_dim: 1
+training:
+  batch_size: 32
+  best_model_path: ./results
+  checkpoint_path: ./checkpoints/lstm_gat.pth
+  epochs: 1
+  lr: 3.550449686462877e-05
+  patience: 10

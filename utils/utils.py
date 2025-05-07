@@ -92,6 +92,14 @@ def save_config(cfg: dict, path: str, study: optuna.Study):
     elif cfg["model"]["name"] == "lstm":
         best_model_cfg["lstm_hidden_dim"] = best_params["lstm_hidden_dim"]
         best_model_cfg["lstm_layers"] = best_params["lstm_layers"]
+    elif cfg["model"]["name"] == "gat":
+        best_model_cfg["gat_hidden_dim"] = best_params["gat_hidden_dim"]
+        best_model_cfg["gat_heads"] = best_params["gat_heads"]
+        best_model_cfg["fully_connected"] = best_params["fully_connected"]
+        best_training_cfg["lr"] = best_params["lr"]
+        best_loss_cfg["alpha"] = best_params["alpha"]
+        best_loss_cfg["gamma"] = best_params["gamma"]
+        best_training_cfg["batch_size"] = cfg["training"]["batch_size"]
     elif cfg["model"]["name"] == "lstm_freeze_gat":
         best_model_cfg["gat_hidden_dim"] = best_params["gat_hidden_dim"]
         best_model_cfg["gat_heads"] = best_params["gat_heads"]
@@ -100,6 +108,15 @@ def save_config(cfg: dict, path: str, study: optuna.Study):
         best_model_cfg["embed_dim"] = best_params["embed_dim"]
         best_model_cfg["num_layers"] = best_params["num_layers"]
         best_model_cfg["nhead"] = best_params["nhead"]
+    elif cfg["model"]["name"] == "gt":
+        best_model_cfg["hidden_dim"] = best_params["hidden_dim"]
+        best_model_cfg["num_heads"] = best_params["num_heads"]
+        best_model_cfg["L"] = best_params["L"]
+        best_model_cfg["norm"] = best_params["norm"]
+        best_model_cfg["pos_enc_dim"] = best_params["pos_enc_dim"]
+        best_training_cfg["lr"] = best_params["lr"]
+        best_loss_cfg["alpha"] = best_params["alpha"]
+        best_loss_cfg["gamma"] = best_params["gamma"]
     best_config = {
         "model": best_model_cfg,
         "training": best_training_cfg,
