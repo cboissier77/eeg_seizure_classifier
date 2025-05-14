@@ -33,3 +33,9 @@ def normalize(x: np.ndarray) -> np.ndarray:
     else:
         x = (x - np.min(x)) / range_val
     return x
+
+def normalize_and_downsample(x: np.ndarray) -> np.ndarray:
+    """Normalize and downsample the signal to 300 samples"""
+    x = normalize(x)
+    x = downsample(x)
+    return x

@@ -77,29 +77,13 @@ def save_config(cfg: dict, path: str, study: optuna.Study):
     best_seed_cfg = copy.deepcopy(cfg["seed"])
     best_data_cfg = copy.deepcopy(cfg["data"])
 
-    if cfg["model"]["name"] == "lstm_gat":
-
-        best_model_cfg["lstm_hidden_dim"] = best_params["lstm_hidden_dim"]
+    if cfg["model"]["name"] == "hyper_gat":
         best_model_cfg["gat_hidden_dim"] = best_params["gat_hidden_dim"]
         best_model_cfg["gat_heads"] = best_params["gat_heads"]
-        best_training_cfg["lr"] = best_params["lr"]
-        best_training_cfg["epochs"] = best_params["epochs"]
-        best_loss_cfg["alpha"] = best_params["alpha"]
-        best_loss_cfg["gamma"] = best_params["gamma"]
-        best_model_cfg["lstm_layers"] = best_params["lstm_layers"]
-        best_model_cfg["fully_connected"] = best_params["fully_connected"]
-        best_training_cfg["batch_size"] = cfg["training"]["batch_size"]
-    elif cfg["model"]["name"] == "lstm":
-        best_model_cfg["lstm_hidden_dim"] = best_params["lstm_hidden_dim"]
-        best_model_cfg["lstm_layers"] = best_params["lstm_layers"]
-    elif cfg["model"]["name"] == "lstm_freeze_gat":
-        best_model_cfg["gat_hidden_dim"] = best_params["gat_hidden_dim"]
-        best_model_cfg["gat_heads"] = best_params["gat_heads"]
-        best_model_cfg["fully_connected"] = best_params["fully_connected"]
-    elif cfg["model"]["name"] == "transformer_encoder":
-        best_model_cfg["embed_dim"] = best_params["embed_dim"]
-        best_model_cfg["num_layers"] = best_params["num_layers"]
-        best_model_cfg["nhead"] = best_params["nhead"]
+        best_model_cfg["gat_layers"] = best_params["gat_layers"]
+        best_model_cfg["alpha"] = best_params["alpha"]
+        best_model_cfg["gamma"] = best_params["gamma"]
+        best_model_cfg["windows_size"] = best_params["windows_size"]
     best_config = {
         "model": best_model_cfg,
         "training": best_training_cfg,

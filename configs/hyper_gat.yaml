@@ -1,0 +1,35 @@
+data:
+  data_dir: ./data/data/
+  hypertuning_subjects_ids:
+  - s001
+  - s004
+  - s005
+  - s007
+  - s009
+  - s010
+  - s011
+  train_split: 0.8
+  train_subsample: 1.0
+  validation_id_epoch_tuning: s002
+  preprocessing: raw
+loss:
+  alpha: 0.75
+  gamma: 2.0
+model:
+  gat_heads: 8
+  gat_hidden_dim: 64
+  input_dim: 1
+  gat_layers: 1
+  windows_size: 500
+  name: hyper_gat
+  output_dim: 1
+seed: 42
+training:
+  batch_size: 32
+  best_epoch: 15
+  best_model_path: ./results/trained_model.pth
+  best_val_score: 0.6517321186119502
+  epochs: 5
+  lr: 0.001
+  max_epochs: 30
+  n_trials: 50

@@ -1,8 +1,10 @@
 from pathlib import Path
 
 import pandas as pd
-from data.preprocess import downsample, fft_filtering, time_filtering, normalize
+from data.preprocess import downsample, fft_filtering, time_filtering, normalize, normalize_and_downsample
 from seiz_eeg.dataset import EEGDataset
+import torch
+import numpy as np
 
 
 class EEGDatasetWrapper:
@@ -34,6 +36,8 @@ class EEGDatasetWrapper:
             self.preprocessing = None
         elif preprocessing == "normalize":
             self.preprocessing = normalize
+        elif preprocessing == "normalize_and_downsample":
+            self.preprocessing = normalize_and_downsample
         else:
             raise ValueError(f"Unknown preprocessing method: {preprocessing}")
 
@@ -116,3 +120,45 @@ class EEGDatasetWrapper:
         )
 
         return test_dataset
+
+class EEGGraphFeatureDataset(torch.utils.data.Dataset):
+    def __init__(self, eeg_dataset, window_size=100):
+        self.eeg_dataset = eeg_dataset
+        self.window_size = window_size
+
+    def __len__(self):
+        return len(self.eeg_dataset)
+
+    def __getitem__(self, idx):
+        signal, label = self.eeg_dataset[idx]  # signal shape: (seq_len, num_electrodes)
+        features = self.extract_graph_features(signal)  # (num_windows, num_electrodes, fft_dim)
+        return features, label
+
+    def extract_graph_features(self, signal):
+        """
+        Args:
+            signal: numpy array of shape (seq_len, num_electrodes)
+        Returns:
+            Tensor of shape (num_windows, num_freqs, num_electrodes)
+        """
+        seq_len, num_electrodes = signal.shape
+        fs = 250  # Hz
+        step = int(self.window_size)
+        windows = []
+
+        for start in range(0, seq_len - self.window_size + 1, step):
+            windows.append(signal[start:start+self.window_size])
+
+        windows = np.stack(windows)  # (num_windows, window_size, num_electrodes)
+        
+        # FFT along time axis
+        fft_windows = np.fft.fft(windows, axis=1)
+        fft_windows = np.abs(fft_windows)
+        fft_windows = np.log(np.maximum(fft_windows, 1e-8))  # Log power
+
+        # Frequency selection
+        freqs = np.fft.fftfreq(self.window_size, d=1/fs)
+        pos_mask = (freqs >= 0.5) & (freqs <= 30)
+        fft_windows = fft_windows[:, pos_mask, :]  # (num_windows, num_freqs, num_electrodes)
+
+        return torch.from_numpy(fft_windows).float()
