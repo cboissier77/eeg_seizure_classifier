@@ -68,7 +68,25 @@ def final_training(cfg, dataset_wrapper):
     criterion = BinaryFocalLoss(
         alpha=cfg["loss"]["alpha"], gamma=cfg["loss"]["gamma"]
     )
-    optimizer = torch.optim.Adam(model.parameters(), lr=cfg["training"]["lr"])
+    if cfg["model"]["finetune"]:
+        print(
+            f"Loading pretrained model from {cfg['model']['model_pth_path']}"
+        )
+        model.load_state_dict(
+            torch.load(cfg["model"]["model_pth_path"], map_location=device)
+        )
+        print(f"Model loaded from {cfg['model']['model_pth_path']}")
+        # unfreeze the model
+        for param in model.parameters():
+            param.requires_grad = True
+            optimizer = torch.optim.Adam([
+        {"params": model.lstm_modules.parameters(), "lr": 1e-5},
+        {"params": model.gat.parameters(), "lr": 1e-4},
+        {"params": model.fc.parameters(), "lr": 1e-4},
+        {"params": model.lstm_proj.parameters(), "lr": 1e-4},
+        ], weight_decay=1e-5)
+    else:
+        optimizer = torch.optim.Adam(model.parameters(), lr=cfg["training"]["lr"])
     train_model(
         model, train_loader, None, criterion, optimizer, epochs=epochs, device=device
     )

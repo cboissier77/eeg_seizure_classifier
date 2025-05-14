@@ -26,6 +26,7 @@ model:
   fully_connected: True
   lstm_pth_path: "./results/lstm_epoch_5.pth"
   model_pth_path: "./results/gat_freeze_lstm_epoch_15.pth"
+  finetune: true
 
 training:
   batch_size: 32
