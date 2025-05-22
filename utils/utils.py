@@ -42,10 +42,7 @@ def parse_args():
         type=str,
         choices=[
             "hyperparameter_tuning",
-            "epoch_tuning",
-            "final_training",
             "testing",
-            "push_to_hub",
         ],
     )
     return parser.parse_args()
@@ -81,8 +78,6 @@ def save_config(cfg: dict, path: str, study: optuna.Study):
         best_model_cfg["gat_hidden_dim"] = best_params["gat_hidden_dim"]
         best_model_cfg["gat_heads"] = best_params["gat_heads"]
         best_model_cfg["gat_layers"] = best_params["gat_layers"]
-        best_model_cfg["alpha"] = best_params["alpha"]
-        best_model_cfg["gamma"] = best_params["gamma"]
         best_model_cfg["windows_size"] = best_params["windows_size"]
     best_config = {
         "model": best_model_cfg,

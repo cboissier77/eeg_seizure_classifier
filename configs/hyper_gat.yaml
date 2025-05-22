@@ -27,9 +27,9 @@ seed: 42
 training:
   batch_size: 32
   best_epoch: 15
-  best_model_path: ./results/trained_model.pth
+  best_model_path: ./results/trained_model_hyperGat.pth
   best_val_score: 0.6517321186119502
-  epochs: 5
+  epochs: 70
   lr: 0.001
-  max_epochs: 30
+  max_epochs: 70
   n_trials: 50

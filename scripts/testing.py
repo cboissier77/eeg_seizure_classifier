@@ -2,7 +2,8 @@
 from sklearn.metrics import roc_auc_score, f1_score
 import torch
 from torch.utils.data import DataLoader
-from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model, EEG_Transformer_Model
+from models import Hyper_GAT_Model
+from data.dataset import EEGGraphFeatureDataset
 import pandas as pd
 
 
@@ -15,61 +16,31 @@ def testing(cfg, dataset_wrapper):
     """
     # Set the device to GPU if available, otherwise use CPU
     device = torch.device("cpu")
-    if cfg["model"]["name"] == "lstm_gat":
-        # Load the model
-        model = EEG_LSTM_GAT_Model(
-            input_dim=cfg["model"]["input_dim"],
-            lstm_hidden_dim=cfg["model"]["lstm_hidden_dim"],
-            gat_hidden_dim=cfg["model"]["gat_hidden_dim"],
-            output_dim=cfg["model"]["output_dim"],
-            gat_heads=cfg["model"]["gat_heads"],
-            lstm_layers=cfg["model"]["lstm_layers"],
-            fully_connected=cfg["model"]["fully_connected"],
-        ).to(device)
+        # Prepare data splits
+    test_dataset = dataset_wrapper.test_dataset()
+    test_dataset = EEGGraphFeatureDataset(test_dataset, window_size=cfg["model"]["windows_size"])
 
-    elif cfg["model"]["name"] == "lstm":
-        # Load the model
-        model = EEG_LSTM_Model(
-            input_dim=cfg["model"]["input_dim"],
-            lstm_hidden_dim=cfg["model"]["lstm_hidden_dim"],
-            output_dim=cfg["model"]["output_dim"],
-            lstm_layers=cfg["model"]["lstm_layers"],
-        ).to(device)
-    elif cfg["model"]["name"] == "lstm_freeze_gat":
-        # Load the model
-        model = EEG_LSTM_GAT_Model(
-            input_dim=cfg["model"]["input_dim"],
-            lstm_hidden_dim=cfg["model"]["lstm_hidden_dim"],
-            gat_hidden_dim=cfg["model"]["gat_hidden_dim"],
-            output_dim=cfg["model"]["output_dim"],
-            gat_heads=cfg["model"]["gat_heads"],
-            lstm_layers=cfg["model"]["lstm_layers"],
-            fully_connected=cfg["model"]["fully_connected"],
-        ).to(device)
-        model.load_and_freeze_lstm(cfg["model"]["lstm_pth_path"])
-    elif cfg["model"]["name"] == "transformer_encoder":
-        # Load the model
-        model = EEG_Transformer_Model(
-            input_dim=cfg["model"]["input_dim"],
-            embed_dim=cfg["model"]["embed_dim"],
-            output_dim=cfg["model"]["output_dim"],
-            patch_size=cfg["model"]["patch_size"],
-            num_layers=cfg["model"]["num_layers"],
-            nhead=cfg["model"]["nhead"],
-        ).to(device)
+    input_dim = test_dataset[0][0].shape[1]
 
-    else:
-        raise ValueError(f"Model {cfg['model']['name']} not supported for testing.")
+    # Create DataLoaders
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=cfg["training"]["batch_size"],
+        shuffle=False,
+    )
+
+    # Initialize model, loss, optimizer
+    model = Hyper_GAT_Model(
+        input_dim=input_dim,
+        gat_hidden_dim=cfg["model"]["gat_hidden_dim"],
+        output_dim=cfg["model"]["output_dim"],
+        gat_heads=cfg["model"]["gat_heads"],
+        gat_layers=cfg["model"]["gat_layers"],
+    ).to(device)
 
     # Load the model weights
     model_path = cfg["training"]["best_model_path"]
     model.load_state_dict(torch.load(model_path))
-    # Create test dataset
-    dataset_te = dataset_wrapper.test_dataset()
-    # Create DataLoader for the test dataset
-    loader_te = DataLoader(
-        dataset_te, batch_size=cfg["training"]["batch_size"], shuffle=False
-    )
     # Set the model to evaluation mode
     model.eval()
     # Lists to store sample IDs and predictions
@@ -77,7 +48,7 @@ def testing(cfg, dataset_wrapper):
     all_ids = []
     # Disable gradient computation for inference
     with torch.no_grad():
-        for batch in loader_te:
+        for batch in test_loader:
             # Assume each batch returns a tuple (x_batch, sample_id)
             # If your dataset does not provide IDs, you can generate them based on the batch index.
             x_batch, x_ids = batch
@@ -103,6 +74,9 @@ def testing(cfg, dataset_wrapper):
     all_ids = [i.replace("$$", "_") for i in all_ids]
     submission_df = pd.DataFrame({"id": all_ids, "label": all_predictions})
 
+    date = pd.to_datetime("now").strftime("%Y-%m-%d")
+    name = f"submission_hyper_gat_{date}.csv"
+
     # Save the DataFrame to a CSV file without an index
-    submission_df.to_csv("submission.csv", index=False)
+    submission_df.to_csv(name, index=False)
     print("Kaggle submission file generated: submission.csv")
