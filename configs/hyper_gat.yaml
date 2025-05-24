@@ -16,20 +16,20 @@ loss:
   alpha: 0.75
   gamma: 2.0
 model:
-  gat_heads: 8
-  gat_hidden_dim: 64
+  gat_heads: 6
+  gat_hidden_dim: 57
   input_dim: 1
-  gat_layers: 1
-  windows_size: 500
+  gat_layers: 4
+  windows_size: 1000
   name: hyper_gat
   output_dim: 1
 seed: 42
 training:
   batch_size: 32
   best_epoch: 15
-  best_model_path: ./results/trained_model_hyperGat.pth
+  best_model_path: ./checkpoints/optuna/best_model_0.7624578591561989.pth
   best_val_score: 0.6517321186119502
   epochs: 70
   lr: 0.001
   max_epochs: 70
-  n_trials: 50
+  n_trials: 30

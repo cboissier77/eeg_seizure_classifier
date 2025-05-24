@@ -120,8 +120,6 @@ def objective(trial, cfg, data_wrapper, device, best_score_path):
         val_macro_f1 = evaluate_model(model, val_loader, device)
         print(f"Epoch {epoch+1} - Validation Macro F1: {val_macro_f1:.4f}")
         scheduler.step(val_macro_f1)
-        print(val_macro_f1)
-        print(best_val_score)
 
         # Save best model
         if val_macro_f1 > best_val_score:
