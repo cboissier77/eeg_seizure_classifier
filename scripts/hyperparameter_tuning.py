@@ -1,157 +1,155 @@
 import torch
+import torch.nn as nn
+from tqdm import tqdm
 import optuna
+import numpy as np
 from torch.utils.data import DataLoader
+from training.eval import evaluate_model
 import os
 from utils.utils import (
     load_best_val_score,
     save_best_val_score,
     save_config,
 )
-from training.train import train_model
-from models import EEG_LSTM_Model, EEG_LSTM_GAT_Model, EEG_Transformer_Model
-from training.losses import BinaryFocalLoss
+from models import Hyper_GAT_Model
+from data.dataset import EEGGraphFeatureDataset
+
+global best_val_score
 
 
-def objective(
-    trial, cfg, dataset_wrapper, selected_ids, best_val_score, device, best_score_path
-):
-    """Objective function for Optuna hyperparameter optimization.
-    Args:
-        trial (optuna.Trial): Optuna trial object.
-        cfg (dict): Configuration dictionary.
-        dataset_wrapper (EEGDatasetWrapper): EEG dataset wrapper object.
-        selected_ids (list): List of subject IDs for leave-one-out cross-validation.
-        best_val_score (float): Best validation score so far.
-        device (torch.device): Device to use for training (CPU or GPU).
-    Returns:
-        float: Validation score.
-    Raises:
-        ValueError: If the model name is not supported.
-    """
-    ############################################################################################################
-    # Define hyperparameters to optimize
+def balance_dataset(train_dataset):
+    """Balance the dataset by downsampling the majority class."""
+    labels = train_dataset.get_label_array()
+    labels = np.array(labels)
+    train_data_label_1 = []
+    train_data_label_0 = []
+    for i, (train_data, label) in enumerate(train_dataset):
+        if label == 1:
+            train_data_label_1.append((train_data, label))
+        else:
+            train_data_label_0.append((train_data, label))
+    train_data_label_1 = np.array(train_data_label_1, dtype=object)
+    train_data_label_0 = np.array(train_data_label_0, dtype=object)
+    print(f"Number of samples with label 1: {len(train_data_label_1)}")
+    print(f"Number of samples with label 0: {len(train_data_label_0)}")
+    num_samples = min(len(train_data_label_1), len(train_data_label_0))
+    train_data_label_0 = train_data_label_0[
+        np.random.choice(len(train_data_label_0), num_samples, replace=False)
+    ]
+    train_data_label_1 = train_data_label_1[
+        np.random.choice(len(train_data_label_1), num_samples, replace=False)
+    ]
 
+    print(f"Number of samples with label 1 after resampling: {len(train_data_label_1)}")
+    print(f"Number of samples with label 0 after resampling: {len(train_data_label_0)}")
+    train_dataset = np.concatenate((train_data_label_0, train_data_label_1), axis=0)
+    np.random.shuffle(train_dataset)
+    return train_dataset
+
+
+def objective(trial, cfg, data_wrapper, device, best_score_path):
+    global best_val_score
     model_name = cfg["model"]["name"]
-    if model_name == "lstm_gat":
-
-        lstm_hidden_dim = trial.suggest_int("lstm_hidden_dim", 32, 256)
-        lstm_layers = trial.suggest_int("lstm_layers", 1, 4)
-        gat_hidden_dim = trial.suggest_int("gat_hidden_dim", 16, 128)
-        gat_heads = trial.suggest_int("gat_heads", 1, 8)
-        epochs = cfg["training"]["epochs"]  # Fixed epochs for LOOCV
-        lr = trial.suggest_float("lr", 1e-5, 1e-2, log=True)
-        alpha = trial.suggest_float("alpha", 0.6, 0.9)
-        gamma = trial.suggest_float("gamma", 0.5, 5.0)
-        fully_connected = trial.suggest_categorical("fully_connected", [True, False])
-
-    elif model_name == "lstm":
-        # lstm_hidden_dim = trial.suggest_int("lstm_hidden_dim", 32, 256)
-        lstm_hidden_dim = trial.suggest_int("lstm_hidden_dim", 32, 100)
-        lstm_layers = trial.suggest_int("lstm_layers", 1, 4)
-        epochs = cfg["training"]["epochs"]
-        alpha = cfg["loss"]["alpha"]
-        gamma = cfg["loss"]["gamma"]
-        lr = cfg["training"]["lr"]
-    
-    elif model_name == "lstm_freeze_gat":
-        lstm_hidden_dim = cfg["model"]["lstm_hidden_dim"]
-        lstm_layers = cfg["model"]["lstm_layers"]
-        epochs = cfg["training"]["epochs"]
-        lr = cfg["training"]["lr"]
-        alpha = cfg["loss"]["alpha"]
-        gamma = cfg["loss"]["gamma"]
-        gat_hidden_dim = trial.suggest_int("gat_hidden_dim", 16, 32)
-        gat_heads = trial.suggest_int("gat_heads", 1, 8)
-        fully_connected = trial.suggest_categorical("fully_connected", [True, False])
-
-    elif model_name == "transformer_encoder":
-         
-        epochs = cfg["training"]["epochs"]
-        alpha = cfg["loss"]["alpha"]
-        gamma = cfg["loss"]["gamma"]
-        lr = cfg["training"]["lr"]
-        embed_dim = trial.suggest_categorical("embed_dim", [32, 64, 128])
-        num_layers = trial.suggest_int("num_layers", 1, 2)
-        nhead = trial.suggest_categorical("nhead", [1, 2, 4, 8])
-        patch_size = trial.suggest_categorical("patch_size", [10, 30, 100, 300, 1000])
-
-
-    else:
+    if model_name != "hyper_gat":
         raise ValueError(f"Model {model_name} not supported for hyperparameter tuning.")
-    ############################################################################################################
-    # Training with leave-one-out cross-validation
 
-    val_scores = []
+    # Suggest hyperparameters
+    lr = cfg["training"]["lr"]
+    gat_hidden_dim = trial.suggest_int("gat_hidden_dim", 16, 128)
+    gat_heads = trial.suggest_int("gat_heads", 1, 8)
+    gat_layers = trial.suggest_int("gat_layers", 1, 4)
+    windows_size = trial.suggest_categorical(
+        "windows_size", [250, 500, 1000, 1500, 2000, 3000]
+    )
+    epochs = cfg["training"]["epochs"]
 
-    for i in selected_ids:
-        print(f"Training with subject {i} as validation set")
-        # Split the dataset into training and validation sets
-        subjects_ids_train = [x for x in selected_ids if x != i]
-        train_dataset, val_dataset = dataset_wrapper.leave_one_out_split(
-            i, subjects_ids_train
+    # Split dataset
+    selected_ids = data_wrapper.get_subject_ids()
+    val_id = cfg["data"]["validation_id"]
+    selected_ids.remove(val_id)
+    train_dataset, val_dataset = data_wrapper.leave_one_out_split(val_id, selected_ids)
+
+    train_dataset = balance_dataset(train_dataset)
+
+    train_dataset = EEGGraphFeatureDataset(train_dataset, window_size=windows_size)
+    val_dataset = EEGGraphFeatureDataset(val_dataset, window_size=windows_size)
+
+    input_dim = train_dataset[0][0].shape[1]
+
+    # Loaders
+    train_loader = DataLoader(
+        train_dataset, batch_size=cfg["training"]["batch_size"], shuffle=True
+    )
+    val_loader = DataLoader(
+        val_dataset, batch_size=cfg["training"]["batch_size"], shuffle=False
+    )
+
+    # Model, optimizer, scheduler
+    model = Hyper_GAT_Model(
+        input_dim, gat_hidden_dim, cfg["model"]["output_dim"], gat_heads, gat_layers
+    ).to(device)
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode="max", patience=3, factor=0.5, verbose=True
+    )
+
+    # Training
+    best_value_optuna_session = 0
+    print("🧠 Starting training...")
+
+    for epoch in range(epochs):
+        model.train()
+        running_loss = 0.0
+        for batch_x, batch_y in tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}"):
+            batch_x = batch_x.float().to(device)
+            batch_y = batch_y.float().to(device)
+
+            optimizer.zero_grad()
+            logits = model(batch_x)
+            loss = criterion(logits, batch_y)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+
+        print(
+            f"Epoch {epoch+1} - Training Loss: {running_loss / len(train_loader):.4f}"
         )
 
-        train_loader = DataLoader(
-            train_dataset, batch_size=cfg["training"]["batch_size"], shuffle=True
-        )
-        val_loader = DataLoader(val_dataset, batch_size=cfg["training"]["batch_size"])
-        if model_name == "lstm_gat":
-            model = EEG_LSTM_GAT_Model(
-                input_dim=cfg["model"]["input_dim"],
-                lstm_hidden_dim=lstm_hidden_dim,
-                gat_hidden_dim=gat_hidden_dim,
-                output_dim=cfg["model"]["output_dim"],
-                gat_heads=gat_heads,
-                lstm_layers=lstm_layers,
-                fully_connected=fully_connected,
-            ).to(device)
-        elif model_name == "lstm":
-            model = EEG_LSTM_Model(
-                input_dim=cfg["model"]["input_dim"],
-                lstm_hidden_dim=lstm_hidden_dim,
-                output_dim=cfg["model"]["output_dim"],
-                lstm_layers=lstm_layers,
-            ).to(device)
-        elif model_name == "lstm_freeze_gat":
-            model = EEG_LSTM_GAT_Model(
-                input_dim=cfg["model"]["input_dim"],
-                lstm_hidden_dim=lstm_hidden_dim,
-                gat_hidden_dim=gat_hidden_dim,
-                output_dim=cfg["model"]["output_dim"],
-                gat_heads=gat_heads,
-                lstm_layers=lstm_layers,
-                fully_connected=fully_connected,
-            ).to(device)
-            model.load_and_freeze_lstm(cfg["model"]["lstm_pth_path"])
-        elif model_name == "transformer_encoder":
-            model = EEG_Transformer_Model(
-                input_dim=cfg["model"]["input_dim"],
-                embed_dim=embed_dim,
-                output_dim=cfg["model"]["output_dim"],
-                patch_size=patch_size,
-                num_layers=num_layers,
-                nhead=nhead,
-            ).to(device)
+        # Validation and scheduler update
+        model.eval()
+        val_macro_f1 = evaluate_model(model, val_loader, device)
+        print(f"Epoch {epoch+1} - Validation Macro F1: {val_macro_f1:.4f}")
+        scheduler.step(val_macro_f1)
 
-        criterion = BinaryFocalLoss(alpha=alpha, gamma=gamma)
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        # Save best model
+        if val_macro_f1 > best_val_score:
+            best_val_score = val_macro_f1
+            save_best_val_score(best_score_path, best_val_score)
+            torch.save(
+                model.state_dict(), f"checkpoints/optuna/best_model_{best_val_score}.pth"
+            )
+            print(f"✅ Saved new best val_score: {val_macro_f1:.4f}")
+            print(
+                f"gat_hidden_dim: {gat_hidden_dim}, gat_heads: {gat_heads}, gat_layers: {gat_layers}, windows_size: {windows_size}"
+            )
+            # save config
+            to_save = [
+                "gat_hidden_dim",
+                "gat_heads",
+                "gat_layers",
+                "windows_size",
+            ]
+            path = f"checkpoints/optuna/best_model_config_{best_val_score}.txt"
+            # dump in csv
+            with open(path, "w") as f:
+                for key in to_save:
+                    f.write(f"{key}: {locals()[key]}\n")
 
-        val_score = train_model(
-            model, train_loader, val_loader, criterion, optimizer, epochs, device=device
-        )
-        val_scores.append(val_score)
+        if best_value_optuna_session < val_macro_f1:
+            best_value_optuna_session = val_macro_f1
 
-    ############################################################################################################
-    # Calculate average validation score
-
-    avg_val_score = sum(val_scores) / len(val_scores)
-
-    if avg_val_score > best_val_score:
-        best_val_score = avg_val_score
-        save_best_val_score(best_score_path, best_val_score)
-        print(f"✅ Saved new best LOOCV avg val_score: {avg_val_score:.4f}")
-
-    return avg_val_score
+    return best_value_optuna_session
 
 
 def hyperparameter_tuning(cfg, dataset_wrapper):
@@ -160,7 +158,7 @@ def hyperparameter_tuning(cfg, dataset_wrapper):
         cfg (dict): Configuration dictionary.
         dataset_wrapper (EEGDatasetWrapper): EEG dataset wrapper object.
     """
-
+    global best_val_score   
     best_score_path = (
         "checkpoints/optuna/best_score.json"  # Path to save the best score
     )
@@ -168,12 +166,6 @@ def hyperparameter_tuning(cfg, dataset_wrapper):
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "cpu"
     )  # Set device to GPU if available, else CPU
-
-    # choose ids for leave-one-out cross-validation
-    selected_ids = cfg["data"][
-        "hypertuning_subjects_ids"
-    ]  # based on data exploration performed prior to this
-    print(f"Selected subjects for LOOCV: {selected_ids}")
 
     os.makedirs("checkpoints/optuna", exist_ok=True)  # make sure the directory exists
     storage_path = "sqlite:///checkpoints/optuna/eeg_study.db"
@@ -188,8 +180,6 @@ def hyperparameter_tuning(cfg, dataset_wrapper):
             trial,
             cfg,
             dataset_wrapper,
-            selected_ids,
-            best_val_score,
             device,
             best_score_path,
         ),

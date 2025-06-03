@@ -1,0 +1,20 @@
+data:
+  data_dir: ./data/data/
+  validation_id: s002
+  preprocessing: raw
+model:
+  gat_heads: 2
+  gat_hidden_dim: 101
+  input_dim: 1
+  gat_layers: 3
+  windows_size: 2000
+  name: hyper_gat
+  output_dim: 1
+seed: 42
+training:
+  batch_size: 32
+  epochs: 70
+  lr: 0.001
+  n_trials: 30
+testing:
+  best_model_path: ./checkpoints/optuna/best_model_0.7468254205596829.pth
