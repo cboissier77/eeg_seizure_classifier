@@ -18,6 +18,8 @@ class EEGDatasetWrapper:
                 - "fft_filtering": Apply FFT filtering to the signal.
                 - "time_filtering": Apply time filtering to the signal.
                 - "raw": No preprocessing.
+                - "normalize": Normalize the signal.
+                - "normalize_and_downsample": Normalize and downsample the signal.
         """
         self.data_root = Path(data_dir)
         self.clips_tr = pd.read_parquet(self.data_root / "train/segments.parquet")
@@ -142,7 +144,7 @@ class EEGGraphFeatureDataset(torch.utils.data.Dataset):
             Tensor of shape (num_windows, num_freqs, num_electrodes)
         """
         seq_len, num_electrodes = signal.shape
-        fs = 250  # Hz
+        fs = 250  # Hz form dataset information
         step = int(self.window_size)
         windows = []
 

@@ -70,7 +70,7 @@ def save_config(cfg: dict, path: str, study: optuna.Study):
     best_params = study.best_trial.params
     best_model_cfg = copy.deepcopy(cfg["model"])
     best_training_cfg = copy.deepcopy(cfg["training"])
-    best_loss_cfg = copy.deepcopy(cfg["loss"])
+    best_testing_cfg = copy.deepcopy(cfg["testing"])
     best_seed_cfg = copy.deepcopy(cfg["seed"])
     best_data_cfg = copy.deepcopy(cfg["data"])
 
@@ -82,7 +82,7 @@ def save_config(cfg: dict, path: str, study: optuna.Study):
     best_config = {
         "model": best_model_cfg,
         "training": best_training_cfg,
-        "loss": best_loss_cfg,
+        "loss": best_testing_cfg,
         "seed": best_seed_cfg,
         "data": best_data_cfg,
     }

@@ -18,6 +18,7 @@ global best_val_score
 
 
 def balance_dataset(train_dataset):
+    """Balance the dataset by downsampling the majority class."""
     labels = train_dataset.get_label_array()
     labels = np.array(labels)
     train_data_label_1 = []
@@ -64,7 +65,7 @@ def objective(trial, cfg, data_wrapper, device, best_score_path):
 
     # Split dataset
     selected_ids = data_wrapper.get_subject_ids()
-    val_id = cfg["data"]["validation_id_epoch_tuning"]
+    val_id = cfg["data"]["validation_id"]
     selected_ids.remove(val_id)
     train_dataset, val_dataset = data_wrapper.leave_one_out_split(val_id, selected_ids)
 
@@ -165,12 +166,6 @@ def hyperparameter_tuning(cfg, dataset_wrapper):
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "cpu"
     )  # Set device to GPU if available, else CPU
-
-    # choose ids for leave-one-out cross-validation
-    selected_ids = cfg["data"][
-        "hypertuning_subjects_ids"
-    ]  # based on data exploration performed prior to this
-    print(f"Selected subjects for LOOCV: {selected_ids}")
 
     os.makedirs("checkpoints/optuna", exist_ok=True)  # make sure the directory exists
     storage_path = "sqlite:///checkpoints/optuna/eeg_study.db"
