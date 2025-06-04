@@ -34,12 +34,13 @@ class Hyper_GAT_Model(nn.Module):
             adj[start:end, start:end] = 1  # fully connect within window
 
         # Step 2: Inter-window (temporal) connections
-        for w in range(num_windows - 1):
-            for n in range(num_nodes):
-                src = w * num_nodes + n
-                dst = (w + 1) * num_nodes + n
-                adj[src, dst] = 1
-                adj[dst, src] = 1  # make it bidirectional if needed
+        for w1 in range(num_windows - 1):
+            for w2 in range(w1 + 1, num_windows):
+                for n in range(num_nodes):
+                    src = w1 * num_nodes + n
+                    dst = w2 * num_nodes + n
+                    adj[src, dst] = 1
+                    adj[dst, src] = 1  # make it bidirectional if needed
 
 
         edge_index, _ = dense_to_sparse(adj)
