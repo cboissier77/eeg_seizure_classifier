@@ -1,0 +1,20 @@
+data:
+  data_dir: ./data/data/
+  validation_id: s002
+  preprocessing: downsample
+model:
+  lstm_hidden_dim: 32
+  lstm_layers: 2
+  gat_heads: 4
+  gat_hidden_dim: 103
+  input_dim: 1
+  name: lstm_gat
+  output_dim: 1
+seed: 42
+training:
+  batch_size: 32
+  epochs: 70
+  lr: 0.001
+  n_trials: 30
+testing:
+  best_model_path: ./best_model_fully_co/best_model_0.7508821520745382.pth
