@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import DataLoader
-from models import Hyper_GAT_Model
+from models import Hyper_GAT_Model, EEG_LSTM_GAT_Model
 from data.dataset import EEGGraphFeatureDataset
 import pandas as pd
 
@@ -12,11 +12,17 @@ def testing(cfg, dataset_wrapper):
         cfg (dict): Configuration dictionary containing model and dataset parameters.
         dataset_wrapper (EEGDatasetWrapper): Wrapper for the EEG dataset.
     """
+    model_name = cfg["model"]["name"]
     device = torch.device("cpu")
     test_dataset = dataset_wrapper.test_dataset()
-    test_dataset = EEGGraphFeatureDataset(
-        test_dataset, window_size=cfg["model"]["windows_size"]
-    )
+    if model_name != "hyper_gat":
+        test_dataset = EEGGraphFeatureDataset(
+            test_dataset, window_size=cfg["model"]["windows_size"]
+        )
+    else:
+        test_dataset = EEGGraphFeatureDataset(
+            test_dataset, window_size=0, already_preprocessed=True
+        )
 
     input_dim = test_dataset[0][0].shape[1]
 
@@ -27,13 +33,24 @@ def testing(cfg, dataset_wrapper):
         shuffle=False,
     )
 
-    model = Hyper_GAT_Model(
-        input_dim=input_dim,
-        gat_hidden_dim=cfg["model"]["gat_hidden_dim"],
-        output_dim=cfg["model"]["output_dim"],
-        gat_heads=cfg["model"]["gat_heads"],
-        gat_layers=cfg["model"]["gat_layers"],
-    ).to(device)
+    if model_name == "hyper_gat":
+        model = Hyper_GAT_Model(
+            input_dim=input_dim,
+            gat_hidden_dim=cfg["model"]["gat_hidden_dim"],
+            output_dim=cfg["model"]["output_dim"],
+            gat_heads=cfg["model"]["gat_heads"],
+            gat_layers=cfg["model"]["gat_layers"],
+        ).to(device)
+    elif model_name == "lstm_gat":       
+        model = EEG_LSTM_GAT_Model(
+            input_dim=1,  # input_dim is 1 for LSTM input
+            lstm_hidden_dim=cfg["model"]["lstm_hidden_dim"],
+            gat_hidden_dim=cfg["model"]["gat_hidden_dim"],
+            output_dim=cfg["model"]["output_dim"],
+            gat_heads=cfg["model"]["gat_heads"],
+            lstm_layers=cfg["model"]["lstm_layers"],
+            fully_connected=cfg["model"].get("fully_connected", True),
+        ).to(device)
 
     # Load the model weights
     model_path = cfg["testing"]["best_model_path"]
@@ -60,7 +77,10 @@ def testing(cfg, dataset_wrapper):
     submission_df = pd.DataFrame({"id": all_ids, "label": all_predictions})
 
     date = pd.to_datetime("now").strftime("%Y-%m-%d")
-    name = f"submission_hyper_gat_{date}.csv"
+    if model_name == "hyper_gat":
+        name = f"submission_hyper_gat_{date}.csv"
+    elif model_name == "lstm_gat":
+        name = f"submission_lstm_gat_{date}.csv"
 
     # Save the DataFrame to a CSV file without an index
     submission_df.to_csv(name, index=False)

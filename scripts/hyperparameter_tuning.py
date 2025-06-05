@@ -11,7 +11,7 @@ from utils.utils import (
     save_best_val_score,
     save_config,
 )
-from models import Hyper_GAT_Model
+from models import Hyper_GAT_Model, EEG_LSTM_GAT_Model
 from data.dataset import EEGGraphFeatureDataset
 
 global best_val_score
@@ -50,17 +50,24 @@ def balance_dataset(train_dataset):
 def objective(trial, cfg, data_wrapper, device, best_score_path):
     global best_val_score
     model_name = cfg["model"]["name"]
-    if model_name != "hyper_gat":
+    if model_name != "hyper_gat" and model_name != "lstm_gat":
         raise ValueError(f"Model {model_name} not supported for hyperparameter tuning.")
 
     # Suggest hyperparameters
     lr = cfg["training"]["lr"]
-    gat_hidden_dim = trial.suggest_int("gat_hidden_dim", 16, 128)
-    gat_heads = trial.suggest_int("gat_heads", 1, 8)
-    gat_layers = trial.suggest_int("gat_layers", 1, 4)
-    windows_size = trial.suggest_categorical(
-        "windows_size", [250, 500, 1000, 1500, 2000, 3000]
-    )
+    if model_name == "hyper_gat":
+        gat_hidden_dim = trial.suggest_int("gat_hidden_dim", 16, 128)
+        gat_heads = trial.suggest_int("gat_heads", 1, 8)
+        gat_layers = trial.suggest_int("gat_layers", 1, 4)
+        windows_size = trial.suggest_categorical(
+            "windows_size", [250, 500, 1000, 1500, 2000, 3000]
+        )
+    elif model_name == "lstm_gat":
+        lstm_hidden_dim = trial.suggest_int("lstm_hidden_dim", 16, 128)
+        gat_hidden_dim = trial.suggest_int("gat_hidden_dim", 16, 128)
+        gat_heads= trial.suggest_int("gat_heads", 1, 8)
+        lstm_layers = trial.suggest_int("lstm_layers", 1, 4)
+        fully_connected=True
     epochs = cfg["training"]["epochs"]
 
     # Split dataset
@@ -71,8 +78,17 @@ def objective(trial, cfg, data_wrapper, device, best_score_path):
 
     train_dataset = balance_dataset(train_dataset)
 
-    train_dataset = EEGGraphFeatureDataset(train_dataset, window_size=windows_size)
-    val_dataset = EEGGraphFeatureDataset(val_dataset, window_size=windows_size)
+    if model_name == "hyper_gat":
+        train_dataset = EEGGraphFeatureDataset(train_dataset, window_size=windows_size)
+        val_dataset = EEGGraphFeatureDataset(val_dataset, window_size=windows_size)
+    elif model_name == "lstm_gat":
+        train_dataset = EEGGraphFeatureDataset(
+            train_dataset, window_size=0, already_preprocessed=True
+        )
+        val_dataset = EEGGraphFeatureDataset(
+            val_dataset, window_size=0, already_preprocessed=True
+        )
+
 
     input_dim = train_dataset[0][0].shape[1]
 
@@ -85,9 +101,20 @@ def objective(trial, cfg, data_wrapper, device, best_score_path):
     )
 
     # Model, optimizer, scheduler
-    model = Hyper_GAT_Model(
-        input_dim, gat_hidden_dim, cfg["model"]["output_dim"], gat_heads, gat_layers
-    ).to(device)
+    if model_name == "hyper_gat":
+        model = Hyper_GAT_Model(
+            input_dim, gat_hidden_dim, cfg["model"]["output_dim"], gat_heads, gat_layers
+        ).to(device)
+    elif model_name == "lstm_gat":
+        model = EEG_LSTM_GAT_Model(
+            1, # input_dim is 1 for LSTM input
+            lstm_hidden_dim,
+            gat_hidden_dim,
+            cfg["model"]["output_dim"],
+            gat_heads,
+            lstm_layers,
+            fully_connected=fully_connected,
+        ).to(device)
     criterion = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -134,12 +161,20 @@ def objective(trial, cfg, data_wrapper, device, best_score_path):
                 f"gat_hidden_dim: {gat_hidden_dim}, gat_heads: {gat_heads}, gat_layers: {gat_layers}, windows_size: {windows_size}"
             )
             # save config
-            to_save = [
-                "gat_hidden_dim",
-                "gat_heads",
-                "gat_layers",
-                "windows_size",
-            ]
+            if model_name == "hyper_gat":
+                to_save = [
+                   "gat_hidden_dim",
+                   "gat_heads",
+                    "gat_layers",
+                    "windows_size",
+                ]
+            elif model_name == "lstm_gat":
+                to_save = [
+                    "lstm_hidden_dim",
+                    "gat_hidden_dim",
+                    "gat_heads",
+                    "lstm_layers",
+                ]
             path = f"checkpoints/optuna/best_model_config_{best_val_score}.txt"
             # dump in csv
             with open(path, "w") as f:

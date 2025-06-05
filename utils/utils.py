@@ -79,6 +79,11 @@ def save_config(cfg: dict, path: str, study: optuna.Study):
         best_model_cfg["gat_heads"] = best_params["gat_heads"]
         best_model_cfg["gat_layers"] = best_params["gat_layers"]
         best_model_cfg["windows_size"] = best_params["windows_size"]
+    elif cfg["model"]["name"] == "lstm_gat":
+        best_model_cfg["lstm_hidden_dim"] = best_params["lstm_hidden_dim"]
+        best_model_cfg["gat_hidden_dim"] = best_params["gat_hidden_dim"]
+        best_model_cfg["gat_heads"] = best_params["gat_heads"]
+        best_model_cfg["lstm_layers"] = best_params["lstm_layers"]
     best_config = {
         "model": best_model_cfg,
         "training": best_training_cfg,

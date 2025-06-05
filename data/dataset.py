@@ -124,14 +124,19 @@ class EEGDatasetWrapper:
         return test_dataset
 
 class EEGGraphFeatureDataset(torch.utils.data.Dataset):
-    def __init__(self, eeg_dataset, window_size=100):
+    def __init__(self, eeg_dataset, window_size=100, already_preprocessed=False):
         self.eeg_dataset = eeg_dataset
         self.window_size = window_size
+        self.already_preprocessed = already_preprocessed
 
     def __len__(self):
         return len(self.eeg_dataset)
 
     def __getitem__(self, idx):
+        if self.already_preprocessed:
+            features, label = self.eeg_dataset[idx]
+            features = torch.from_numpy(features).float()  # Ensure features are a tensor
+            return features, label
         signal, label = self.eeg_dataset[idx]  # signal shape: (seq_len, num_electrodes)
         features = self.extract_graph_features(signal)  # (num_windows, num_electrodes, fft_dim)
         return features, label
